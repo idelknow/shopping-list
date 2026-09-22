@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>רשימת הקניות של משפחת אידלמן</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Heebo:wght@400;500;600;700&display=swap">
+
+<!--
+  ============================================================
+  SETUP — read this before opening the file in a browser
+  ============================================================
+  This page needs a free Firebase project to share the list between
+  everyone who opens the link (no login required for your family).
+
+  1. Go to https://console.firebase.google.com → "Add project" →
+     give it any name → you can skip Google Analytics.
+  2. In the project, open "Build" → "Firestore Database" → "Create
+     database" → start in PRODUCTION mode → pick any region.
+  3. Click the "Rules" tab in Firestore and replace the contents with:
+
+       rules_version = '2';
+       service cloud.firestore {
+         match /databases/{database}/documents {
+           match /{document=**} {
+             allow read, write: if true;
+           }
+         }
+       }
+
+     then "Publish". (This makes the list open to anyone who has
+     your Firebase config below — fine for a family list nobody else
+     will stumble onto, but don't put anything sensitive in it.)
+  4. Back in Project Overview, click the "</>" (web) icon to register
+     a web app → give it any nickname → you do NOT need Firebase
+     Hosting for this step. It will show you a firebaseConfig object.
+  5. Copy those values into FIREBASE_CONFIG below, replacing the
+     placeholders.
+  6. Put this file on any static host to get a public link — the
+     easiest is GitHub Pages: create a GitHub repo → upload this file
+     as index.html → Settings → Pages → Deploy from branch → root.
+     You'll get a URL like https://<you>.github.io/<repo>/.
+  ============================================================
+-->
+<script>
+  var FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBO4ebSf5RIHZ-yL5fbfhEcnJ1gSc86z8s",
+    authDomain: "idelman-shopping-list.firebaseapp.com",
+    projectId: "idelman-shopping-list",
+    storageBucket: "idelman-shopping-list.firebasestorage.app",
+    messagingSenderId: "291057730228",
+    appId: "1:291057730228:web:491cf338ab08fca6308de1"
+  };
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+
+<style>
+  *{box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  html,body{height:100%;}
+  :root{
+    --bg:#FFFFFF;
+    --surface:#FFFFFF;
+    --surface-2:#F2F8EF;
+    --ink:#20261D;
+    --ink-muted:#707A67;
+    --ink-faint:#AEB8A3;
+    --accent:#2F9E45;
+    --accent-2:#248A3B;
+    --accent-ink:#FFFFFF;
+    --accent-soft:#E3F5E2;
+    --citrus:#F0923E;
+    --citrus-soft:#FCE7D3;
+    --line:#E7EEE1;
+    --danger:#D9503F;
+    --shadow:0 1px 2px rgba(32,38,29,.06), 0 10px 26px -14px rgba(32,38,29,.22);
+    --radius:18px;
+    font-family:'Heebo',system-ui,-apple-system,sans-serif;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#131712;
+      --surface:#1B211A;
+      --surface-2:#212820;
+      --ink:#EAF2E5;
+      --ink-muted:#9BAB90;
+      --ink-faint:#576352;
+      --accent:#4FC468;
+      --accent-2:#3FAE58;
+      --accent-ink:#0C1A0E;
+      --accent-soft:#1F3323;
+      --citrus:#F2A35E;
+      --citrus-soft:#3A2A17;
+      --line:#293024;
+      --danger:#E8887A;
+      --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 26px -14px rgba(0,0,0,.55);
+    }
+  }
+
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    padding-inline:16px;
+    direction:rtl;
+  }
+  img{ max-width:100%; }
+  .wrap{
+    max-width:560px;
+    margin:0 auto;
+    min-height:100%;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .bar{
+    height:5px;
+    border-radius:0 0 6px 6px;
+    margin:0 -16px;
+    background:linear-gradient(90deg, var(--accent), var(--citrus));
+  }
+
+  header{
+    position:sticky;
+    top:0;
+    background:var(--bg);
+    padding-block:18px 12px;
+    z-index:5;
+  }
+  .titles{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px 14px;
+    margin-bottom:16px;
+  }
+  .hero{
+    margin:0 -16px 4px;
+    padding:10px 16px 2px;
+    background:
+      radial-gradient(120% 160% at 12% 0%, var(--accent-soft) 0%, transparent 58%),
+      radial-gradient(120% 160% at 92% 15%, var(--citrus-soft) 0%, transparent 55%);
+    display:flex;
+    justify-content:center;
+  }
+  .hero-art{ width:100%; max-width:230px; height:auto; display:block; }
+  h1{
+    font-family:'Rubik',sans-serif;
+    font-weight:800;
+    font-size:clamp(1.15rem, 5vw, 1.5rem);
+    line-height:1.2;
+    letter-spacing:-0.01em;
+    margin:0;
+    text-wrap:balance;
+    flex:1 1 220px;
+    min-width:0;
+  }
+  .history-btn{
+    appearance:none;
+    background:var(--surface);
+    border:1px solid var(--line);
+    color:var(--ink-muted);
+    font:inherit;
+    font-size:.8rem;
+    font-weight:600;
+    padding:8px 13px;
+    border-radius:999px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    flex:none;
+  }
+  .history-btn:hover{ color:var(--accent-2); border-color:var(--accent); }
+  .history-btn svg{ width:14px; height:14px; }
+
+  form.add{
+    display:flex;
+    gap:8px;
+    background:var(--surface);
+    border:1.5px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:7px;
+    transition:border-color .15s;
+  }
+  form.add:focus-within{ border-color:var(--citrus); }
+  form.add input[type="text"]{
+    flex:1 1 auto;
+    min-width:0;
+    border:none;
+    background:transparent;
+    color:var(--ink);
+    font:inherit;
+    font-size:.97rem;
+    padding:9px 11px;
+    outline:none;
+  }
+  form.add input[type="text"]::placeholder{ color:var(--ink-faint); }
+  .cat-field{
+    flex:0 0 auto;
+    max-width:40%;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    background:var(--surface-2);
+    border-radius:12px;
+    padding:0 9px;
+  }
+  .cat-dot{
+    width:22px; height:22px;
+    border-radius:50%;
+    flex:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+    line-height:1;
+    background:var(--surface);
+    transition:background .15s;
+  }
+  form.add select{
+    flex:1 1 auto;
+    min-width:0;
+    border:none;
+    background:transparent;
+    color:var(--ink-muted);
+    font:inherit;
+    font-size:.78rem;
+    font-weight:600;
+    padding:9px 0;
+    outline:none;
+  }
+  form.add button{
+    flex:0 0 auto;
+    width:38px;
+    height:38px;
+    border:none;
+    border-radius:12px;
+    background:var(--accent);
+    color:var(--accent-ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:0 4px 10px -3px rgba(47,158,69,.4);
+  }
+  form.add button:active{ transform:scale(.93); }
+  form.add button svg{ width:18px; height:18px; }
+
+  .sync-banner{
+    font-size:.78rem;
+    color:var(--ink-muted);
+    background:var(--surface-2);
+    border-radius:11px;
+    padding:8px 11px;
+    margin-top:10px;
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .sync-banner .dot{ width:6px; height:6px; border-radius:50%; background:var(--danger); flex:none; }
+
+  main{ flex:1; padding-bottom:24px; }
+
+  .group{ margin-top:22px; }
+  .group h2{
+    font-family:'Heebo',sans-serif;
+    font-size:.76rem;
+    font-weight:700;
+    color:var(--ink-muted);
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin:0 0 9px 4px;
+  }
+  .cat-badge{
+    width:24px; height:24px;
+    border-radius:50%;
+    flex:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:13px;
+    line-height:1;
+  }
+
+  ul.items{ list-style:none; margin:0; padding:0; }
+  .item{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:11px 6px;
+    border-bottom:1px solid var(--line);
+  }
+  .item:last-child{ border-bottom:none; }
+
+  .check{
+    flex:none;
+    width:23px; height:23px;
+    border-radius:50%;
+    border:1.8px solid var(--ink-faint);
+    background:var(--surface);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+  }
+  .check svg{ width:13px; height:13px; opacity:0; transition:opacity .12s; }
+  .item.checked .check{ background:var(--accent); border-color:var(--accent); }
+  .item.checked .check svg{ opacity:1; }
+  .item.checked .check svg path{ stroke:var(--accent-ink); }
+
+  .item .name{
+    flex:1 1 auto;
+    min-width:0;
+    font-size:.97rem;
+    font-weight:500;
+    overflow-wrap:anywhere;
+  }
+  .item.checked .name{ color:var(--ink-faint); text-decoration:line-through; font-weight:400; }
+
+  .item .del{
+    flex:none;
+    appearance:none;
+    background:none;
+    border:none;
+    color:var(--ink-faint);
+    cursor:pointer;
+    padding:6px;
+    display:flex;
+  }
+  .item .del:hover{ color:var(--danger); }
+  .item .del svg{ width:15px; height:15px; }
+
+  .empty{
+    text-align:center;
+    padding:60px 20px 24px;
+    color:var(--ink-muted);
+  }
+  .empty .emoji-big{
+    font-size:2.6rem;
+    line-height:1;
+    margin-bottom:12px;
+  }
+  .empty .big{
+    font-family:'Rubik',sans-serif;
+    font-weight:700;
+    font-size:1.25rem;
+    color:var(--ink);
+    margin-bottom:7px;
+  }
+  .empty p{ margin:0; font-size:.9rem; max-width:34ch; margin-inline:auto; }
+
+  .gotit{
+    margin-top:26px;
+    border-top:1px solid var(--line);
+    padding-top:14px;
+  }
+  .gotit-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .gotit-toggle{
+    appearance:none;
+    background:none;
+    border:none;
+    font:inherit;
+    color:var(--ink-muted);
+    font-size:.8rem;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+    padding:4px;
+  }
+  .gotit-toggle svg{ width:11px; height:11px; transition:transform .15s; }
+  .gotit-toggle.open svg{ transform:rotate(-90deg); }
+  .clear-btn{
+    appearance:none;
+    border:1px solid var(--line);
+    background:var(--surface);
+    color:var(--ink-muted);
+    font:inherit;
+    font-size:.78rem;
+    font-weight:600;
+    padding:7px 12px;
+    border-radius:999px;
+    cursor:pointer;
+  }
+  .clear-btn:hover{ color:var(--danger); border-color:var(--danger); }
+  .gotit ul.items{ margin-top:8px; }
+  .gotit ul.items[hidden]{ display:none; }
+
+  .scrim{
+    position:fixed; inset:0;
+    background:rgba(20,22,17,.36);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .18s;
+    z-index:20;
+  }
+  .scrim.show{ opacity:1; pointer-events:auto; }
+
+  .drawer{
+    position:fixed;
+    left:0; top:0; bottom:0;
+    width:min(360px, 88vw);
+    background:var(--surface);
+    box-shadow:12px 0 32px rgba(0,0,0,.16);
+    transform:translateX(-100%);
+    transition:transform .2s ease;
+    z-index:21;
+    display:flex;
+    flex-direction:column;
+    padding:18px;
+  }
+  .drawer.show{ transform:translateX(0); }
+  .drawer-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .drawer-head h2{
+    font-family:'Rubik',sans-serif;
+    font-weight:700;
+    font-size:1.2rem;
+    margin:0;
+  }
+  .drawer-close{
+    appearance:none; background:none; border:none;
+    color:var(--ink-muted); cursor:pointer; padding:6px;
+  }
+  .drawer-close svg{ width:16px; height:16px; }
+  .drawer-body{ overflow-y:auto; flex:1; }
+
+  .run{
+    border:1px solid var(--line);
+    border-radius:13px;
+    padding:12px 14px;
+    margin-bottom:10px;
+  }
+  .run-top{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    font-size:.78rem;
+    color:var(--ink-muted);
+    margin-bottom:6px;
+  }
+  .run-top b{ color:var(--accent-2); font-weight:700; }
+  .run-items{
+    font-size:.86rem;
+    color:var(--ink-muted);
+    line-height:1.55;
+  }
+  .hist-empty{
+    color:var(--ink-muted);
+    font-size:.88rem;
+    text-align:center;
+    padding:44px 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="bar"></div>
+<div class="wrap">
+  <header>
+    <div class="hero">
+      <svg class="hero-art" viewBox="0 0 260 96" aria-hidden="true">
+        <path d="M92 56Q130 14 168 56" stroke="#C9975B" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <path d="M52 58H208L190 90Q189 94 185 94H75Q71 94 70 90Z" fill="#C9975B"/>
+        <path d="M99 62V86M130 62V88M161 62V86" stroke="#A97C46" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
+        <circle cx="98" cy="46" r="17" fill="#DD5C4D"/>
+        <ellipse cx="92" cy="30" rx="6" ry="3" fill="#2F9E45" transform="rotate(-25 92 30)"/>
+        <ellipse cx="104" cy="30" rx="6" ry="3" fill="#2F9E45" transform="rotate(25 104 30)"/>
+        <ellipse cx="142" cy="45" rx="14" ry="18" fill="#E8B23F" transform="rotate(-8 142 45)"/>
+        <circle cx="182" cy="42" r="16" fill="#2F9E45"/>
+        <circle cx="176" cy="37" r="2" fill="#248A3B"/>
+        <circle cx="188" cy="40" r="2" fill="#248A3B"/>
+        <circle cx="181" cy="48" r="2" fill="#248A3B"/>
+        <ellipse cx="215" cy="58" rx="9" ry="6" fill="#2F9E45" opacity=".8" transform="rotate(-18 215 58)"/>
+        <ellipse cx="46" cy="60" rx="9" ry="6" fill="#F0923E" opacity=".8" transform="rotate(18 46 60)"/>
+      </svg>
+    </div>
+    <div class="titles">
+      <h1>רשימת הקניות של משפחת אידלמן</h1>
+      <button class="history-btn" id="historyBtn" type="button">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.2" stroke="currentColor" stroke-width="1.4"/><path d="M10 6.3V10l2.6 1.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        היסטוריה
+      </button>
+    </div>
+    <form class="add" id="addForm">
+      <input type="text" id="itemInput" placeholder="הוספת פריט…" autocomplete="off" maxlength="80" />
+      <div class="cat-field">
+        <span class="cat-dot" id="catDot" aria-hidden="true"></span>
+        <select id="categorySelect" aria-label="קטגוריה"></select>
+      </div>
+      <button type="submit" aria-label="הוספת פריט">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <div class="sync-banner" id="syncBanner" hidden>
+      <span class="dot"></span>
+      <span id="syncBannerText">לא מחובר לסנכרון משותף — הרשימה נשמרת רק במכשיר הזה.</span>
+    </div>
+  </header>
+
+  <main>
+    <div id="listRoot"></div>
+    <div class="gotit" id="gotitSection" hidden>
+      <div class="gotit-head">
+        <button class="gotit-toggle" id="gotitToggle" type="button">
+          <svg viewBox="0 0 20 20" fill="none"><path d="M7 5l6 5-6 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="gotitLabel">נאסף (0)</span>
+        </button>
+        <button class="clear-btn" id="clearBtn" type="button">ניקוי להיסטוריה</button>
+      </div>
+      <ul class="items" id="gotitList" hidden></ul>
+    </div>
+  </main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <h2>היסטוריה</h2>
+    <button class="drawer-close" id="drawerClose" type="button">
+      <svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawerBody">
+    <div class="hist-empty">📭<br>עדיין אין רשימות שנוקו.</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var BASE_TITLE = document.title || "רשימת הקניות של משפחת אידלמן";
+
+  var CATEGORIES = [
+    { key:"produce",   label:"ירקות ופירות",     color:"#2F9E45", emoji:"🥕" },
+    { key:"dairy",     label:"מוצרי חלב וביצים", color:"#E8B23F", emoji:"🧀" },
+    { key:"meat",      label:"בשר ודגים",         color:"#DD5C4D", emoji:"🥩" },
+    { key:"bakery",    label:"מאפים",             color:"#CE8A3E", emoji:"🍞" },
+    { key:"pantry",    label:"מזווה",             color:"#8C7A5B", emoji:"🥫" },
+    { key:"frozen",    label:"קפואים",            color:"#4FA3C4", emoji:"🧊" },
+    { key:"household", label:"ניקיון ובית",       color:"#8570B3", emoji:"🧽" },
+    { key:"other",     label:"אחר",               color:"#9AA08D", emoji:"🛒" }
+  ];
+  var CAT_BY_KEY = {};
+  CATEGORIES.forEach(function(c){ CAT_BY_KEY[c.key] = c; });
+
+  var CATEGORY_KEYWORDS = {
+    produce: ["עגבני","מלפפון","גזר","בצל","שום","תפוח","בננה","ענב","לימון","תפוז","פלפל","חסה","כרוב","תות","אבוקדו","קישוא","חציל","תרד","פטרוזיליה","כוסברה","נענע","שמיר","סלק","צנונית","ברוקולי","כרובית","אפרסק","אגס","מנגו","אבטיח","מלון","שזיף","רימון","קלמנטינה","אשכולית","תמר","ירקות","פירות"],
+    dairy: ["חלב","גבינה","גבינת","יוגורט","חמאה","שמנת","ביצים","ביצה","קוטג","לבנה","שוקו","מילקי"],
+    meat: ["עוף","בשר","בקר","הודו","נקניק","סטייק","כבש","דג ","דגים","סלמון","טונה","פילה","קציצות","המבורגר","שניצל","כבד","פרגית","חזה עוף","כנפיים"],
+    bakery: ["לחם","פיתה","בייגל","חלה","לחמניה","קרואסון","עוגה","עוגיות","בורקס","פוקצה","טורטיה","מאפה","בגט"],
+    pantry: ["אורז","פסטה","קמח","סוכר","שמן","מלח","תבלין","קטשופ","מיונז","חומוס","טחינה","שימורים","עדשים","שעועית","קינואה","סילאן","דבש","ריבה","קפה","תה ","שוקולד","חטיף","במבה","ביסלי","קורנפלקס","דגני","אטריות","רסק","רוטב","חומץ","שמרים","וניל","תירס","זיתים","אגוזים","שקדים","פיצוחים","קרקר","טופו","סויה"],
+    frozen: ["קפוא","קפואים","גלידה","ארטיק","בצק עלים"],
+    household: ["נייר טואלט","מגבות נייר","סבון","אקונומיקה","נוזל כלים","שקיות אשפה","מרכך","אבקת כביסה","מגבונים","משחת שיניים","שמפו","דאודורנט","נרות","סוללות","מטהר"]
+  };
+  var KEYWORD_LIST = [];
+  Object.keys(CATEGORY_KEYWORDS).forEach(function(cat){
+    CATEGORY_KEYWORDS[cat].forEach(function(kw){ KEYWORD_LIST.push({ kw: kw, cat: cat }); });
+  });
+  KEYWORD_LIST.sort(function(a,b){ return b.kw.length - a.kw.length; });
+
+  function detectCategory(name){
+    var n = (name || "").trim();
+    if (!n) return null;
+    for (var i = 0; i < KEYWORD_LIST.length; i++){
+      if (n.indexOf(KEYWORD_LIST[i].kw) !== -1) return KEYWORD_LIST[i].cat;
+    }
+    return null;
+  }
+
+  var els = {
+    listRoot: document.getElementById("listRoot"),
+    gotitSection: document.getElementById("gotitSection"),
+    gotitList: document.getElementById("gotitList"),
+    gotitToggle: document.getElementById("gotitToggle"),
+    gotitLabel: document.getElementById("gotitLabel"),
+    clearBtn: document.getElementById("clearBtn"),
+    addForm: document.getElementById("addForm"),
+    itemInput: document.getElementById("itemInput"),
+    categorySelect: document.getElementById("categorySelect"),
+    catDot: document.getElementById("catDot"),
+    syncBanner: document.getElementById("syncBanner"),
+    syncBannerText: document.getElementById("syncBannerText"),
+    historyBtn: document.getElementById("historyBtn"),
+    drawer: document.getElementById("drawer"),
+    scrim: document.getElementById("scrim"),
+    drawerClose: document.getElementById("drawerClose"),
+    drawerBody: document.getElementById("drawerBody")
+  };
+
+  CATEGORIES.forEach(function(c){
+    var opt = document.createElement("option");
+    opt.value = c.key;
+    opt.textContent = c.emoji + " " + c.label;
+    els.categorySelect.appendChild(opt);
+  });
+  els.categorySelect.value = "other";
+
+  var gotitOpen = false;
+  var items = [];
+  var history = [];
+
+  var db = null;
+  var mode = "connecting"; // "sync" | "local"
+  var LOCAL_KEY = "larder_local_he_v1";
+
+  function nowIso(){ return new Date().toISOString(); }
+  function uid(){ return "l" + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c];
+    });
+  }
+
+  function catOf(key){ return CAT_BY_KEY[key] || CAT_BY_KEY.other; }
+
+  function updateCatDot(key){
+    if (!els.catDot) return;
+    var cat = catOf(key);
+    els.catDot.textContent = cat.emoji;
+    els.catDot.style.background = cat.color + "26";
+  }
+  updateCatDot("other");
+
+  function itemsWord(n){
+    if (n === 1) return "פריט אחד";
+    if (n === 2) return "שני פריטים";
+    return n + " פריטים";
+  }
+
+  function checkSvg(){
+    return '<svg viewBox="0 0 20 20" fill="none"><path d="M5 10.5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  function delSvg(){
+    return '<svg viewBox="0 0 20 20" fill="none"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  }
+
+  function render(){
+    var unchecked = items.filter(function(i){ return !i.checked; });
+    var checked = items.filter(function(i){ return i.checked; });
+
+    try{
+      document.title = unchecked.length > 0 ? "(" + unchecked.length + ") " + BASE_TITLE : BASE_TITLE;
+    } catch(e){}
+
+    if (unchecked.length === 0 && checked.length === 0){
+      els.listRoot.innerHTML =
+        '<div class="empty"><div class="emoji-big">🧺</div><div class="big">הרשימה ריקה</div>' +
+        '<p>הוסיפו מה שצריך למעלה — כל מי שיפתח את הקישור יראה מיד.</p></div>';
+    } else if (unchecked.length === 0){
+      els.listRoot.innerHTML =
+        '<div class="empty"><div class="emoji-big">🎉</div><div class="big">הכל נאסף</div>' +
+        '<p>כל הפריטים ברשימה כבר נאספו.</p></div>';
+    } else {
+      var html = "";
+      CATEGORIES.forEach(function(cat){
+        var group = unchecked.filter(function(i){ return (i.category || "other") === cat.key; });
+        if (!group.length) return;
+        html += '<div class="group"><h2><span class="cat-badge" style="background:' + cat.color + '26">' + cat.emoji + '</span>' + escapeHtml(cat.label) + '</h2><ul class="items">';
+        group.forEach(function(i){
+          html += itemRow(i);
+        });
+        html += "</ul></div>";
+      });
+      els.listRoot.innerHTML = html;
+    }
+
+    if (checked.length === 0){
+      els.gotitSection.hidden = true;
+    } else {
+      els.gotitSection.hidden = false;
+      els.gotitLabel.textContent = "נאסף (" + checked.length + ")";
+      els.gotitList.innerHTML = checked.map(itemRow).join("");
+      els.gotitList.hidden = !gotitOpen;
+      els.gotitToggle.classList.toggle("open", gotitOpen);
+    }
+
+    bindRowEvents();
+  }
+
+  function itemRow(i){
+    return '<li class="item' + (i.checked ? " checked" : "") + '" data-id="' + i.id + '">' +
+      '<button class="check" data-action="toggle" aria-label="סימון ' + escapeHtml(i.name) + '">' + checkSvg() + '</button>' +
+      '<span class="name">' + escapeHtml(i.name) + '</span>' +
+      '<button class="del" data-action="delete" aria-label="הסרת ' + escapeHtml(i.name) + '">' + delSvg() + '</button>' +
+      '</li>';
+  }
+
+  function bindRowEvents(){
+    document.querySelectorAll('[data-action="toggle"]').forEach(function(btn){
+      btn.onclick = function(){
+        var id = btn.closest(".item").dataset.id;
+        toggleItem(id);
+      };
+    });
+    document.querySelectorAll('[data-action="delete"]').forEach(function(btn){
+      btn.onclick = function(){
+        var id = btn.closest(".item").dataset.id;
+        deleteItem(id);
+      };
+    });
+  }
+
+  function saveLocal(){
+    try{ localStorage.setItem(LOCAL_KEY, JSON.stringify({ items: items, history: history })); } catch(e){}
+  }
+  function loadLocal(){
+    try{
+      var raw = localStorage.getItem(LOCAL_KEY);
+      if (raw){
+        var parsed = JSON.parse(raw);
+        items = parsed.items || [];
+        history = parsed.history || [];
+      }
+    } catch(e){}
+  }
+
+  function addItem(name, category){
+    name = name.trim();
+    if (!name) return;
+    if (mode === "sync" && db){
+      db.collection("items").add({
+        name: name, category: category, checked: false,
+        addedAt: nowIso(), checkedAt: null
+      }).catch(function(){});
+    } else {
+      items.push({ id: uid(), name: name, category: category, checked: false, addedAt: nowIso(), checkedAt: null });
+      saveLocal(); render();
+    }
+  }
+
+  function toggleItem(id){
+    var item = items.find(function(i){ return i.id === id; });
+    if (!item) return;
+    var nextChecked = !item.checked;
+    if (mode === "sync" && db){
+      db.collection("items").doc(id).update({ checked: nextChecked, checkedAt: nextChecked ? nowIso() : null }).catch(function(){});
+    } else {
+      item.checked = nextChecked;
+      item.checkedAt = nextChecked ? nowIso() : null;
+      saveLocal(); render();
+    }
+  }
+
+  function deleteItem(id){
+    if (mode === "sync" && db){
+      db.collection("items").doc(id).delete().catch(function(){});
+    } else {
+      items = items.filter(function(i){ return i.id !== id; });
+      saveLocal(); render();
+    }
+  }
+
+  function clearChecked(){
+    var checked = items.filter(function(i){ return i.checked; });
+    if (!checked.length) return;
+    var entry = {
+      items: checked.map(function(i){ return { name: i.name, category: i.category }; }),
+      completedAt: nowIso(),
+      count: checked.length
+    };
+    if (mode === "sync" && db){
+      db.collection("history").add(entry).catch(function(){});
+      checked.forEach(function(i){
+        db.collection("items").doc(i.id).delete().catch(function(){});
+      });
+    } else {
+      entry.id = uid();
+      history.unshift(entry);
+      items = items.filter(function(i){ return !i.checked; });
+      saveLocal(); render(); renderHistory();
+    }
+  }
+
+  function renderHistory(){
+    if (!history.length){
+      els.drawerBody.innerHTML = '<div class="hist-empty">📭<br>עדיין אין רשימות שנוקו.</div>';
+      return;
+    }
+    var sorted = history.slice().sort(function(a,b){ return b.completedAt.localeCompare(a.completedAt); });
+    els.drawerBody.innerHTML = sorted.map(function(run){
+      var d = new Date(run.completedAt);
+      var when = isNaN(d.getTime()) ? "" : d.toLocaleDateString("he-IL", { month:"long", day:"numeric" }) + " · " + d.toLocaleTimeString("he-IL", { hour:"numeric", minute:"2-digit" });
+      var names = (run.items || []).map(function(i){ return escapeHtml(i.name); }).join(", ");
+      var count = run.items ? run.items.length : (run.count || 0);
+      return '<div class="run"><div class="run-top"><span>' + when + '</span><b>' + itemsWord(count) + '</b></div>' +
+        '<div class="run-items">' + names + '</div></div>';
+    }).join("");
+  }
+
+  var manualCat = false;
+
+  els.itemInput.addEventListener("input", function(){
+    if (manualCat) return;
+    var guess = detectCategory(els.itemInput.value) || "other";
+    els.categorySelect.value = guess;
+    updateCatDot(guess);
+  });
+
+  els.categorySelect.addEventListener("change", function(){
+    manualCat = true;
+    updateCatDot(els.categorySelect.value);
+  });
+
+  els.addForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    addItem(els.itemInput.value, els.categorySelect.value || "other");
+    els.itemInput.value = "";
+    manualCat = false;
+    els.categorySelect.value = "other";
+    updateCatDot("other");
+    els.itemInput.focus();
+  });
+
+  els.gotitToggle.addEventListener("click", function(){
+    gotitOpen = !gotitOpen;
+    render();
+  });
+
+  els.clearBtn.addEventListener("click", clearChecked);
+
+  function openDrawer(){
+    renderHistory();
+    els.drawer.classList.add("show");
+    els.scrim.classList.add("show");
+    els.drawer.setAttribute("aria-hidden","false");
+  }
+  function closeDrawer(){
+    els.drawer.classList.remove("show");
+    els.scrim.classList.remove("show");
+    els.drawer.setAttribute("aria-hidden","true");
+  }
+  els.historyBtn.addEventListener("click", openDrawer);
+  els.drawerClose.addEventListener("click", closeDrawer);
+  els.scrim.addEventListener("click", closeDrawer);
+
+  function startLocal(bannerText){
+    mode = "local";
+    loadLocal();
+    if (els.syncBannerText && bannerText) els.syncBannerText.textContent = bannerText;
+    els.syncBanner.hidden = false;
+    render();
+  }
+
+  function startSync(database){
+    mode = "sync";
+    db = database;
+
+    db.collection("items").orderBy("addedAt","asc").onSnapshot(function(snap){
+      items = snap.docs.map(function(d){
+        var data = d.data() || {};
+        return {
+          id: d.id,
+          name: data.name || "",
+          category: data.category || "other",
+          checked: !!data.checked,
+          addedAt: data.addedAt || "",
+          checkedAt: data.checkedAt || null
+        };
+      });
+      render();
+    }, function(){
+      startLocal("איבדנו את החיבור לסנכרון — הרשימה נשמרת רק במכשיר הזה עד שהיא תחזור.");
+    });
+
+    db.collection("history").orderBy("completedAt","desc").limit(20).onSnapshot(function(snap){
+      history = snap.docs.map(function(d){
+        var data = d.data() || {};
+        return { id: d.id, items: data.items || [], completedAt: data.completedAt || "", count: data.count };
+      });
+      renderHistory();
+    }, function(){});
+  }
+
+  render();
+
+  var configured = FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf("YOUR_") !== 0;
+  if (configured && window.firebase){
+    try{
+      firebase.initializeApp(FIREBASE_CONFIG);
+      startSync(firebase.firestore());
+    } catch(e){
+      startLocal("החיבור לסנכרון נכשל — הרשימה נשמרת רק במכשיר הזה.");
+    }
+  } else {
+    startLocal("הקובץ עדיין לא מחובר לפיירבייס — ראו את הוראות ההגדרה בראש הקובץ. הרשימה נשמרת כרגע רק במכשיר הזה.");
+  }
+})();
+</script>
+</body>
+</html>
