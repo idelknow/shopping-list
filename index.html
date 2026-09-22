@@ -463,6 +463,48 @@
     color:var(--ink-muted);
     line-height:1.55;
   }
+  .run-actions{
+    margin-top:9px;
+    display:flex;
+    justify-content:flex-end;
+  }
+  .run-add{
+    appearance:none;
+    border:1px solid var(--line);
+    background:var(--surface);
+    color:var(--accent-2);
+    font:inherit;
+    font-size:.76rem;
+    font-weight:600;
+    padding:6px 11px;
+    border-radius:999px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+  }
+  .run-add:hover{ background:var(--accent-soft); border-color:var(--accent); }
+  .run-add svg{ width:11px; height:11px; }
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:calc(20px + env(safe-area-inset-bottom,0px));
+    transform:translateX(-50%) translateY(10px);
+    background:var(--ink);
+    color:var(--bg);
+    font-size:.85rem;
+    font-weight:600;
+    padding:10px 16px;
+    border-radius:999px;
+    opacity:0;
+    transition:opacity .2s, transform .2s;
+    z-index:40;
+    pointer-events:none;
+    box-shadow:var(--shadow);
+    max-width:88vw;
+    text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
   .hist-empty{
     color:var(--ink-muted);
     font-size:.88rem;
@@ -618,6 +660,7 @@
   var gotitOpen = false;
   var items = [];
   var history = [];
+  var lastSortedHistory = [];
 
   var db = null;
   var mode = "connecting"; // "sync" | "local"
@@ -633,6 +676,20 @@
   }
 
   function catOf(key){ return CAT_BY_KEY[key] || CAT_BY_KEY.other; }
+
+  function normalizeName(s){ return (s || "").trim().toLowerCase(); }
+
+  function showToast(msg){
+    var t = document.createElement("div");
+    t.className = "toast";
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(function(){ t.classList.add("show"); });
+    setTimeout(function(){
+      t.classList.remove("show");
+      setTimeout(function(){ t.remove(); }, 220);
+    }, 2200);
+  }
 
   function updateCatDot(key){
     if (!els.catDot) return;
@@ -798,14 +855,59 @@
       return;
     }
     var sorted = history.slice().sort(function(a,b){ return b.completedAt.localeCompare(a.completedAt); });
-    els.drawerBody.innerHTML = sorted.map(function(run){
+    lastSortedHistory = sorted;
+    els.drawerBody.innerHTML = sorted.map(function(run, idx){
       var d = new Date(run.completedAt);
       var when = isNaN(d.getTime()) ? "" : d.toLocaleDateString("he-IL", { month:"long", day:"numeric" }) + " · " + d.toLocaleTimeString("he-IL", { hour:"numeric", minute:"2-digit" });
       var names = (run.items || []).map(function(i){ return escapeHtml(i.name); }).join(", ");
       var count = run.items ? run.items.length : (run.count || 0);
       return '<div class="run"><div class="run-top"><span>' + when + '</span><b>' + itemsWord(count) + '</b></div>' +
-        '<div class="run-items">' + names + '</div></div>';
+        '<div class="run-items">' + names + '</div>' +
+        '<div class="run-actions"><button class="run-add" type="button" data-action="reuse" data-idx="' + idx + '">' +
+        '<svg viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>הוספה לרשימה</button></div>' +
+        '</div>';
     }).join("");
+    bindHistoryEvents();
+  }
+
+  function bindHistoryEvents(){
+    document.querySelectorAll('[data-action="reuse"]').forEach(function(btn){
+      btn.onclick = function(){
+        var run = lastSortedHistory[Number(btn.dataset.idx)];
+        if (run) addRunItems(run.items || []);
+      };
+    });
+  }
+
+  function addRunItems(runItems){
+    var existing = {};
+    items.forEach(function(i){ existing[normalizeName(i.name)] = true; });
+    var toAdd = [];
+    runItems.forEach(function(ri){
+      var key = normalizeName(ri.name);
+      if (!ri.name || existing[key]) return;
+      existing[key] = true;
+      toAdd.push(ri);
+    });
+    if (!toAdd.length){
+      showToast("כל הפריטים כבר ברשימה");
+      return;
+    }
+    if (mode === "sync" && db){
+      toAdd.forEach(function(ri){
+        db.collection("items").add({
+          name: ri.name, category: ri.category || "other", checked: false,
+          addedAt: nowIso(), checkedAt: null
+        }).catch(function(){});
+      });
+    } else {
+      toAdd.forEach(function(ri){
+        items.push({ id: uid(), name: ri.name, category: ri.category || "other", checked: false, addedAt: nowIso(), checkedAt: null });
+      });
+      saveLocal(); render();
+    }
+    showToast(itemsWord(toAdd.length) + " נוספו לרשימה");
+    closeDrawer();
   }
 
   var manualCat = false;
