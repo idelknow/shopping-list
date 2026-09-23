@@ -710,6 +710,8 @@
     border-radius:10px;
     cursor:pointer;
   }
+  .house-lock-form.danger button[type="submit"]{ background:var(--danger); }
+  .house-danger{ margin-top:12px; }
 
   .lock-screen{
     position:fixed; inset:0;
@@ -895,6 +897,15 @@
         <button type="button" id="houseLockCancel" class="link-btn">ביטול</button>
       </form>
     </div>
+
+    <div class="house-danger" id="houseDanger" hidden>
+      <button type="button" id="houseDeleteBtn" class="link-btn danger">מחיקת הרשימה הזו</button>
+      <form id="houseDeleteForm" class="house-lock-form danger" hidden>
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="houseDeleteInput" placeholder="קוד" autocomplete="off" />
+        <button type="submit">מחיקה</button>
+        <button type="button" id="houseDeleteCancel" class="link-btn">ביטול</button>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -960,6 +971,12 @@
       var list = loadRecentHouses().filter(function(h){ return h.id !== id; });
       list.unshift({ id: id, label: label || houseDisplayName(id) });
       localStorage.setItem(RECENT_HOUSES_KEY, JSON.stringify(list.slice(0, 8)));
+    } catch(e){}
+  }
+  function removeRecentHouse(id){
+    try{
+      var list = loadRecentHouses().filter(function(h){ return h.id !== id; });
+      localStorage.setItem(RECENT_HOUSES_KEY, JSON.stringify(list));
     } catch(e){}
   }
 
@@ -1135,6 +1152,11 @@
     houseLockForm: document.getElementById("houseLockForm"),
     houseLockInput: document.getElementById("houseLockInput"),
     houseLockCancel: document.getElementById("houseLockCancel"),
+    houseDanger: document.getElementById("houseDanger"),
+    houseDeleteBtn: document.getElementById("houseDeleteBtn"),
+    houseDeleteForm: document.getElementById("houseDeleteForm"),
+    houseDeleteInput: document.getElementById("houseDeleteInput"),
+    houseDeleteCancel: document.getElementById("houseDeleteCancel"),
     lockScreen: document.getElementById("lockScreen"),
     lockHouseName: document.getElementById("lockHouseName"),
     lockForm: document.getElementById("lockForm"),
@@ -1633,6 +1655,7 @@
       els.houseLockStatus.textContent = "נעילה בקוד דורשת חיבור לסנכרון";
       els.houseLockSetBtn.hidden = true;
       els.houseLockRemoveBtn.hidden = true;
+      els.houseDanger.hidden = true;
       return;
     }
     if (currentPinHash){
@@ -1644,6 +1667,9 @@
       els.houseLockSetBtn.hidden = false;
       els.houseLockRemoveBtn.hidden = true;
     }
+    // Deleting the main list would strand everyone, so it's the one list
+    // this option never applies to.
+    els.houseDanger.hidden = (houseId === "default");
   }
 
   els.houseLockSetBtn.addEventListener("click", function(){
@@ -1683,6 +1709,66 @@
     }).catch(function(){ showToast("הסרת הקוד נכשלה"); });
   });
 
+  // ---- deleting a list ----
+  // A protected list can only be deleted by someone who can type its code
+  // — being on an already-unlocked device isn't enough on its own, so the
+  // code is asked again right here, at the moment of a destructive action.
+  function deleteHouseEverywhere(id){
+    var itemsRef = db.collection("houses/" + id + "/items");
+    var historyRef = db.collection("houses/" + id + "/history");
+    return Promise.all([itemsRef.get(), historyRef.get()]).then(function(results){
+      var batch = db.batch();
+      results[0].docs.forEach(function(d){ batch.delete(d.ref); });
+      results[1].docs.forEach(function(d){ batch.delete(d.ref); });
+      batch.delete(db.doc("houses/" + id + "/meta/settings"));
+      batch.delete(db.doc("houses_index/" + id));
+      return batch.commit();
+    });
+  }
+
+  function finishDeleteHouse(id){
+    var label = houseDisplayName(id);
+    try{ localStorage.removeItem("larder_unlock_" + id); } catch(e){}
+    removeRecentHouse(id);
+    switchHouse("default", "הרשימה הראשית", { silent: true });
+    showToast('הרשימה "' + label + '" נמחקה');
+  }
+
+  els.houseDeleteBtn.addEventListener("click", function(){
+    if (!db) return;
+    if (currentPinHash){
+      els.houseDeleteForm.hidden = false;
+      els.houseDeleteInput.value = "";
+      els.houseDeleteInput.focus();
+    } else {
+      if (!window.confirm('למחוק את הרשימה "' + houseDisplayName(houseId) + '"? לא ניתן לבטל את זה.')) return;
+      var idToDelete = houseId;
+      deleteHouseEverywhere(idToDelete).then(function(){
+        finishDeleteHouse(idToDelete);
+      }).catch(function(){ showToast("המחיקה נכשלה"); });
+    }
+  });
+  els.houseDeleteCancel.addEventListener("click", function(){
+    els.houseDeleteForm.hidden = true;
+  });
+  els.houseDeleteForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var pin = els.houseDeleteInput.value.trim();
+    if (!/^\d{4}$/.test(pin)) return;
+    hashPin(pin, houseId).then(function(hash){
+      if (hash !== currentPinHash){
+        showToast("קוד שגוי");
+        els.houseDeleteInput.value = "";
+        return;
+      }
+      var idToDelete = houseId;
+      els.houseDeleteForm.hidden = true;
+      deleteHouseEverywhere(idToDelete).then(function(){
+        finishDeleteHouse(idToDelete);
+      }).catch(function(){ showToast("המחיקה נכשלה"); });
+    });
+  });
+
   // ---- house chip + switcher modal ----
   function renderHouseChip(){
     els.houseChipLabel.textContent = houseDisplayName(houseId);
@@ -1711,6 +1797,7 @@
     renderHouseRecents();
     els.houseInput.value = "";
     els.houseLockForm.hidden = true;
+    els.houseDeleteForm.hidden = true;
     updateLockSettingsUI();
     els.houseModal.classList.add("show");
     els.houseModal.setAttribute("aria-hidden","false");
@@ -1720,7 +1807,7 @@
     els.houseModal.setAttribute("aria-hidden","true");
   }
 
-  function switchHouse(newId, label){
+  function switchHouse(newId, label, opts){
     var id = sanitizeHouseId(newId);
     if (!id || id === houseId){ closeHouseModal(); return; }
     houseId = id;
@@ -1742,7 +1829,7 @@
     }
     closeHouseModal();
     closeDrawer();
-    showToast('עברתם לרשימה "' + houseDisplayName(id, label) + '"');
+    if (!(opts && opts.silent)) showToast('עברתם לרשימה "' + houseDisplayName(id, label) + '"');
   }
 
   els.houseChip.addEventListener("click", openHouseModal);
