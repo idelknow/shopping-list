@@ -824,6 +824,9 @@
     40%,60%{ transform:translateX(4px); }
   }
   .shake{ animation:shake .4s; }
+  /* A locked space gates everything inside it, including any individually
+     locked list, so its screen always wins if both ever show at once. */
+  #spaceLockScreen{ z-index:51; }
 </style>
 </head>
 <body>
@@ -960,10 +963,24 @@
           <button type="submit">שמירה</button>
           <button type="button" id="spaceEditNameCancel" class="link-btn">ביטול</button>
         </form>
+
+        <div class="house-lock">
+          <div class="house-lock-row">
+            <span id="spaceLockStatus">🔓 אין קוד לקבוצה</span>
+            <button type="button" id="spaceLockSetBtn" class="link-btn">הוספת קוד</button>
+            <button type="button" id="spaceLockRemoveBtn" class="link-btn danger" hidden>הסרת קוד</button>
+          </div>
+          <form id="spaceLockForm" class="house-lock-form" hidden>
+            <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="spaceLockInput" placeholder="••••" autocomplete="off" />
+            <button type="submit">שמירה</button>
+            <button type="button" id="spaceLockCancel" class="link-btn">ביטול</button>
+          </form>
+        </div>
+
         <div class="house-danger" id="spaceDangerSection">
           <button type="button" id="spaceDeleteBtn" class="link-btn danger">מחיקת הקבוצה כולה</button>
-          <form id="spaceDeleteForm" class="house-text-form danger" hidden>
-            <input type="text" id="spaceDeleteInput" placeholder="הקלידו את שם הקבוצה לאישור" autocomplete="off" maxlength="40" />
+          <form id="spaceDeleteForm" class="house-lock-form danger" hidden>
+            <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="spaceDeleteInput" placeholder="קוד" autocomplete="off" />
             <button type="submit">מחיקה</button>
             <button type="button" id="spaceDeleteCancel" class="link-btn">ביטול</button>
           </form>
@@ -995,6 +1012,19 @@
       <button type="submit">כניסה</button>
     </form>
     <div class="lock-error" id="lockError" hidden>קוד שגוי, נסו שוב</div>
+  </div>
+</div>
+
+<div class="lock-screen" id="spaceLockScreen" hidden>
+  <div class="lock-card">
+    <div class="lock-icon">🔒</div>
+    <h2 id="spaceLockGroupName">קבוצה פרטית</h2>
+    <p>הקבוצה הזו מוגנת בקוד בן 4 ספרות</p>
+    <form id="spaceLockGateForm">
+      <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="spaceLockGateInput" placeholder="••••" autocomplete="off" autofocus />
+      <button type="submit">כניסה</button>
+    </form>
+    <div class="lock-error" id="spaceLockGateError" hidden>קוד שגוי, נסו שוב</div>
   </div>
 </div>
 
@@ -1065,8 +1095,13 @@
   // or written the moment the group is created / renamed). Until then the
   // name shown is just guessed from the id.
   var currentSpaceLabel = null;
+  // The group's own entry PIN — separate from any individual list's PIN
+  // inside it. Not real security, same as the list PIN: it just keeps the
+  // group from opening for someone who doesn't have the code.
+  var currentSpacePinHash = null;
   function spaceMetaDoc(){ return db.doc("spaces/" + spaceId + "/meta/settings"); }
   function currentSpaceName(){ return currentSpaceLabel || spaceDisplayName(spaceId); }
+  function spaceUnlockKey(){ return "larder_space_unlock_" + spaceId; }
 
   // A group using its own private space sees its own name everywhere the
   // page said "משפחת אידלמן" (page title, browser tab) — the family's
@@ -1322,6 +1357,17 @@
     spaceDeleteForm: document.getElementById("spaceDeleteForm"),
     spaceDeleteInput: document.getElementById("spaceDeleteInput"),
     spaceDeleteCancel: document.getElementById("spaceDeleteCancel"),
+    spaceLockStatus: document.getElementById("spaceLockStatus"),
+    spaceLockSetBtn: document.getElementById("spaceLockSetBtn"),
+    spaceLockRemoveBtn: document.getElementById("spaceLockRemoveBtn"),
+    spaceLockForm: document.getElementById("spaceLockForm"),
+    spaceLockInput: document.getElementById("spaceLockInput"),
+    spaceLockCancel: document.getElementById("spaceLockCancel"),
+    spaceLockScreen: document.getElementById("spaceLockScreen"),
+    spaceLockGroupName: document.getElementById("spaceLockGroupName"),
+    spaceLockGateForm: document.getElementById("spaceLockGateForm"),
+    spaceLockGateInput: document.getElementById("spaceLockGateInput"),
+    spaceLockGateError: document.getElementById("spaceLockGateError"),
     spaceLeaveBtn: document.getElementById("spaceLeaveBtn"),
     houseSpaceStart: document.getElementById("houseSpaceStart"),
     spaceStartBtn: document.getElementById("spaceStartBtn"),
@@ -1774,7 +1820,7 @@
     subscribeHouseIndex();
     checkHouseLock();
     if (houseId !== "default") registerHouse(houseId);
-    if (spaceId) checkSpaceLabel();
+    if (spaceId) loadSpaceMeta();
   }
 
   // ---- lock screen ----
@@ -1975,8 +2021,10 @@
       els.houseSpaceCurrent.hidden = false;
       els.houseSpaceStart.hidden = true;
       els.spaceEditNameForm.hidden = true;
+      els.spaceLockForm.hidden = true;
       els.spaceDeleteForm.hidden = true;
       els.houseSpaceLabel.textContent = "🔒 קבוצה: " + currentSpaceName();
+      updateSpaceLockSettingsUI();
     } else {
       els.houseSpaceCurrent.hidden = true;
       els.houseSpaceStart.hidden = false;
@@ -2010,16 +2058,115 @@
 
   // Loads the group's own chosen name (if one was ever set) once synced —
   // until this resolves, the name shown is just guessed from the link.
-  function checkSpaceLabel(){
-    if (!db || !spaceId) return;
+  // Loads the group's own name and entry PIN (if any) once synced, and
+  // shows the group's lock screen when it's protected and this device
+  // hasn't unlocked it yet — mirrors checkHouseLock, one level up.
+  function loadSpaceMeta(){
+    if (!db || !spaceId){ updateSpaceLockSettingsUI(); return; }
     spaceMetaDoc().get().then(function(snap){
       var data = snap.exists ? snap.data() : null;
       if (data && data.label){
         currentSpaceLabel = data.label;
         refreshSpaceBranding();
       }
-    }).catch(function(){});
+      currentSpacePinHash = (data && data.pinHash) ? data.pinHash : null;
+      updateSpaceLockSettingsUI();
+      if (!currentSpacePinHash){ hideSpaceLockScreen(); return; }
+      var stored = null;
+      try{ stored = localStorage.getItem(spaceUnlockKey()); } catch(e){}
+      if (stored === currentSpacePinHash) hideSpaceLockScreen();
+      else showSpaceLockScreen();
+    }).catch(function(){ hideSpaceLockScreen(); });
   }
+
+  function showSpaceLockScreen(){
+    els.spaceLockGroupName.textContent = currentSpaceName();
+    els.spaceLockGateError.hidden = true;
+    els.spaceLockGateInput.value = "";
+    els.spaceLockScreen.hidden = false;
+    setTimeout(function(){ els.spaceLockGateInput.focus(); }, 50);
+  }
+  function hideSpaceLockScreen(){ els.spaceLockScreen.hidden = true; }
+
+  function showSpaceLockGateError(){
+    els.spaceLockGateError.hidden = false;
+    els.spaceLockGateInput.value = "";
+    els.spaceLockGateInput.classList.remove("shake");
+    void els.spaceLockGateInput.offsetWidth;
+    els.spaceLockGateInput.classList.add("shake");
+    els.spaceLockGateInput.focus();
+  }
+
+  els.spaceLockGateForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var pin = els.spaceLockGateInput.value.trim();
+    if (!/^\d{4}$/.test(pin)){ showSpaceLockGateError(); return; }
+    hashPin(pin, "space_" + spaceId).then(function(hash){
+      if (hash === currentSpacePinHash){
+        try{ localStorage.setItem(spaceUnlockKey(), hash); } catch(e){}
+        hideSpaceLockScreen();
+      } else {
+        showSpaceLockGateError();
+      }
+    });
+  });
+
+  // ---- space lock settings (inside the list switcher) ----
+  function updateSpaceLockSettingsUI(){
+    if (!spaceId) return;
+    if (!db){
+      els.spaceLockStatus.textContent = "נעילה בקוד דורשת חיבור לסנכרון";
+      els.spaceLockSetBtn.hidden = true;
+      els.spaceLockRemoveBtn.hidden = true;
+      return;
+    }
+    if (currentSpacePinHash){
+      els.spaceLockStatus.textContent = "🔒 הקבוצה מוגנת בקוד";
+      els.spaceLockSetBtn.hidden = true;
+      els.spaceLockRemoveBtn.hidden = false;
+    } else {
+      els.spaceLockStatus.textContent = "🔓 אין קוד לקבוצה";
+      els.spaceLockSetBtn.hidden = false;
+      els.spaceLockRemoveBtn.hidden = true;
+    }
+  }
+
+  els.spaceLockSetBtn.addEventListener("click", function(){
+    els.spaceLockForm.hidden = false;
+    els.spaceLockInput.value = "";
+    els.spaceLockInput.focus();
+  });
+  els.spaceLockCancel.addEventListener("click", function(){
+    els.spaceLockForm.hidden = true;
+  });
+  els.spaceLockForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var pin = els.spaceLockInput.value.trim();
+    if (!/^\d{4}$/.test(pin)){
+      showToast("קוד חייב להיות 4 ספרות");
+      return;
+    }
+    if (!db){ showToast("נעילה בקוד דורשת חיבור לסנכרון"); return; }
+    hashPin(pin, "space_" + spaceId).then(function(hash){
+      return spaceMetaDoc().set({ pinHash: hash }, { merge: true }).then(function(){ return hash; });
+    }).then(function(hash){
+      currentSpacePinHash = hash;
+      try{ localStorage.setItem(spaceUnlockKey(), hash); } catch(e){}
+      els.spaceLockForm.hidden = true;
+      els.spaceLockInput.value = "";
+      updateSpaceLockSettingsUI();
+      showToast("הוגדר קוד לקבוצה");
+    }).catch(function(){ showToast("שמירת הקוד נכשלה"); });
+  });
+  els.spaceLockRemoveBtn.addEventListener("click", function(){
+    if (!window.confirm("להסיר את הקוד מהקבוצה?")) return;
+    spaceMetaDoc().set({ pinHash: null }, { merge: true }).then(function(){
+      currentSpacePinHash = null;
+      try{ localStorage.removeItem(spaceUnlockKey()); } catch(e){}
+      updateSpaceLockSettingsUI();
+      showToast("הוסר הקוד");
+    }).catch(function(){ showToast("הסרת הקוד נכשלה"); });
+  });
 
   // Deletes every list, its history and its lock code across the whole
   // group — everyone who has this group's link loses access to all of it.
@@ -2098,32 +2245,45 @@
       showToast("שם הקבוצה עודכן");
     }).catch(function(){ showToast("שמירת השם נכשלה"); });
   });
+  function finishDeleteSpace(){
+    try{
+      var list = loadRecentSpaces().filter(function(s){ return s.id !== spaceId; });
+      localStorage.setItem(RECENT_SPACES_KEY, JSON.stringify(list));
+    } catch(e){}
+    try{ localStorage.removeItem(spaceUnlockKey()); } catch(e){}
+    goToSpace("");
+  }
+
+  // A protected group can only be deleted by someone who can type its
+  // code — same rule as deleting one list inside it. A group with no code
+  // just gets a plain confirm, same as an unprotected list.
   els.spaceDeleteBtn.addEventListener("click", function(){
-    els.spaceDeleteForm.hidden = false;
-    els.spaceDeleteInput.value = "";
-    els.spaceDeleteInput.placeholder = 'הקלידו "' + currentSpaceName() + '" לאישור';
-    els.spaceDeleteInput.focus();
+    if (!db) return;
+    if (currentSpacePinHash){
+      els.spaceDeleteForm.hidden = false;
+      els.spaceDeleteInput.value = "";
+      els.spaceDeleteInput.focus();
+    } else {
+      if (!window.confirm('למחוק את הקבוצה "' + currentSpaceName() + '" לצמיתות? לא ניתן לבטל את זה.')) return;
+      deleteSpaceEverywhere().then(finishDeleteSpace).catch(function(){ showToast("המחיקה נכשלה"); });
+    }
   });
   els.spaceDeleteCancel.addEventListener("click", function(){
     els.spaceDeleteForm.hidden = true;
   });
   els.spaceDeleteForm.addEventListener("submit", function(e){
     e.preventDefault();
-    var typed = els.spaceDeleteInput.value.trim();
-    var expected = currentSpaceName();
-    if (!typed || typed !== expected){
-      showToast('הקלידו בדיוק "' + expected + '" כדי לאשר');
-      return;
-    }
-    if (!db){ showToast("מחיקה דורשת חיבור לסנכרון"); return; }
-    els.spaceDeleteForm.hidden = true;
-    deleteSpaceEverywhere().then(function(){
-      try{
-        var list = loadRecentSpaces().filter(function(s){ return s.id !== spaceId; });
-        localStorage.setItem(RECENT_SPACES_KEY, JSON.stringify(list));
-      } catch(e){}
-      goToSpace("");
-    }).catch(function(){ showToast("המחיקה נכשלה"); });
+    var pin = els.spaceDeleteInput.value.trim();
+    if (!/^\d{4}$/.test(pin)) return;
+    hashPin(pin, "space_" + spaceId).then(function(hash){
+      if (hash !== currentSpacePinHash){
+        showToast("קוד שגוי");
+        els.spaceDeleteInput.value = "";
+        return;
+      }
+      els.spaceDeleteForm.hidden = true;
+      deleteSpaceEverywhere().then(finishDeleteSpace).catch(function(){ showToast("המחיקה נכשלה"); });
+    });
   });
   els.spaceLeaveBtn.addEventListener("click", function(){
     goToSpace("");
