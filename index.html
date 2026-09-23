@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>רשימת הקניות של משפחת אידלמן</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Heebo:wght@400;500;600;700&display=swap">
 
@@ -264,6 +267,30 @@
     gap:7px;
   }
   .sync-banner .dot{ width:6px; height:6px; border-radius:50%; background:var(--danger); flex:none; }
+
+  .spell-hint{
+    font-size:.8rem;
+    color:var(--ink-muted);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:9px;
+    padding:2px 4px;
+  }
+  .spell-hint span b, .spell-hint #spellWord{ color:var(--ink); font-weight:600; }
+  #spellAccept{
+    appearance:none;
+    border:none;
+    background:var(--accent-soft);
+    color:var(--accent-2);
+    font:inherit;
+    font-size:.78rem;
+    font-weight:700;
+    padding:5px 11px;
+    border-radius:999px;
+    cursor:pointer;
+  }
+  #spellAccept:hover{ background:var(--accent); color:var(--accent-ink); }
 
   main{ flex:1; padding-bottom:24px; }
 
@@ -552,6 +579,10 @@
         <svg viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
     </form>
+    <div class="spell-hint" id="spellHint" hidden>
+      <span>התכוונת ל־"<span id="spellWord"></span>"?</span>
+      <button type="button" id="spellAccept">כן, תקנו</button>
+    </div>
     <div class="sync-banner" id="syncBanner" hidden>
       <span class="dot"></span>
       <span id="syncBannerText">לא מחובר לסנכרון משותף — הרשימה נשמרת רק במכשיר הזה.</span>
@@ -592,6 +623,17 @@
 
   var BASE_TITLE = document.title || "רשימת הקניות של משפחת אידלמן";
 
+  // Hebrew final-form letters (ך ם ן ף ץ) only look like that at the very
+  // end of a word — once a suffix like ים/ות is added they turn back into
+  // their regular form (מלפפון -> מלפפונים). Our keyword stems are plain
+  // substring matches, so without this they silently stop matching any
+  // plural: normalizing both sides to the regular letter fixes the whole
+  // class of misses (cucumbers, lemons, melons, spices, snacks, ...).
+  var FINAL_LETTERS = { "ך":"כ", "ם":"מ", "ן":"נ", "ף":"פ", "ץ":"צ" };
+  function normalizeHeb(s){
+    return (s || "").replace(/[ךםןףץ]/g, function(c){ return FINAL_LETTERS[c]; });
+  }
+
   var CATEGORIES = [
     { key:"produce",   label:"ירקות ופירות",     color:"#2F9E45", emoji:"🥕" },
     { key:"dairy",     label:"מוצרי חלב וביצים", color:"#E8B23F", emoji:"🧀" },
@@ -606,7 +648,7 @@
   CATEGORIES.forEach(function(c){ CAT_BY_KEY[c.key] = c; });
 
   var CATEGORY_KEYWORDS = {
-    produce: ["עגבני","מלפפון","גזר","בצל","שום","תפוח","בננה","ענב","לימון","תפוז","פלפל","חסה","כרוב","תות","אבוקדו","קישוא","חציל","תרד","פטרוזיליה","כוסברה","נענע","שמיר","סלק","צנונית","ברוקולי","כרובית","אפרסק","אגס","מנגו","אבטיח","מלון","שזיף","רימון","קלמנטינה","אשכולית","תמר","ירקות","פירות"],
+    produce: ["עגבני","מלפפון","גזר","בצל","שום","תפוח","בננה","ענב","לימון","תפוז","פלפל","חסה","כרוב","תות","אבוקדו","קישוא","חציל","תרד","פטרוזיליה","כוסברה","נענע","שמיר","סלק","צנונית","ברוקולי","כרובית","אפרסק","אגס","מנגו","אבטיח","מלון","שזיף","רימון","קלמנטינה","אשכולית","תמר","ירקות","פירות","בטטה","פטרי","תפוד"],
     dairy: ["חלב","גבינה","גבינת","יוגורט","חמאה","שמנת","ביצים","ביצה","קוטג","לבנה","שוקו","מילקי"],
     meat: ["עוף","בשר","בקר","הודו","נקניק","סטייק","כבש","דג ","דגים","סלמון","טונה","פילה","קציצות","המבורגר","שניצל","כבד","פרגית","חזה עוף","כנפיים"],
     bakery: ["לחם","פיתה","בייגל","חלה","לחמניה","קרואסון","עוגה","עוגיות","בורקס","פוקצה","טורטיה","מאפה","בגט"],
@@ -616,16 +658,82 @@
   };
   var KEYWORD_LIST = [];
   Object.keys(CATEGORY_KEYWORDS).forEach(function(cat){
-    CATEGORY_KEYWORDS[cat].forEach(function(kw){ KEYWORD_LIST.push({ kw: kw, cat: cat }); });
+    CATEGORY_KEYWORDS[cat].forEach(function(kw){ KEYWORD_LIST.push({ kw: normalizeHeb(kw), cat: cat }); });
   });
   KEYWORD_LIST.sort(function(a,b){ return b.kw.length - a.kw.length; });
 
   function detectCategory(name){
-    var n = (name || "").trim();
+    var n = normalizeHeb((name || "").trim());
     if (!n) return null;
     for (var i = 0; i < KEYWORD_LIST.length; i++){
       if (n.indexOf(KEYWORD_LIST[i].kw) !== -1) return KEYWORD_LIST[i].cat;
     }
+    return null;
+  }
+
+  // A small dictionary of common item names, used only for catching typos
+  // ("did you mean...?") — separate from the category stems above, which
+  // are partial fragments, not real words to suggest.
+  var CORRECT_ITEMS = [
+    "עגבניות","מלפפונים","גזר","בצל","שום","תפוחים","בננות","ענבים","לימונים","תפוזים",
+    "פלפלים","חסה","כרוב","תות שדה","אבוקדו","קישואים","חצילים","תרד","פטרוזיליה","כוסברה",
+    "נענע","שמיר","סלק","צנוניות","ברוקולי","כרובית","אפרסקים","אגסים","מנגו","אבטיח",
+    "מלונים","שזיפים","רימונים","קלמנטינות","אשכוליות","תמרים","בטטה","פטריות","תפוחי אדמה",
+    "חלב","גבינה צהובה","גבינה לבנה","יוגורט","חמאה","שמנת","ביצים","קוטג'","לבנה","שוקו","מילקי",
+    "עוף","בשר טחון","בקר","הודו","נקניקיות","סטייק","כבש","דגים","סלמון","טונה","פילה",
+    "קציצות","המבורגר","שניצל","כבד","חזה עוף","כנפיים",
+    "לחם","פיתות","בייגלים","חלה","לחמניות","קרואסון","עוגה","עוגיות","בורקס","פוקצה","טורטיות","בגט",
+    "אורז","פסטה","קמח","סוכר","שמן זית","מלח","תבלינים","קטשופ","מיונז","חומוס","טחינה",
+    "שימורים","עדשים","שעועית","קינואה","סילאן","דבש","ריבה","קפה","תה","שוקולד","חטיפים",
+    "במבה","ביסלי","קורנפלקס","דגני בוקר","אטריות","רסק עגבניות","רוטב סויה","חומץ","שמרים",
+    "וניל","תירס","זיתים","אגוזים","שקדים","פיצוחים","קרקרים","טופו",
+    "ירקות קפואים","גלידה","ארטיקים","בצק עלים","פיצה קפואה",
+    "נייר טואלט","מגבות נייר","סבון כלים","אקונומיקה","נוזל כלים","שקיות אשפה","מרכך כביסה",
+    "אבקת כביסה","מגבונים","משחת שיניים","שמפו","דאודורנט","נרות","סוללות","מטהר אוויר"
+  ];
+
+  function levenshtein(a, b){
+    a = a || ""; b = b || "";
+    var m = a.length, n = b.length;
+    if (!m) return n;
+    if (!n) return m;
+    var prev = new Array(n + 1);
+    for (var j = 0; j <= n; j++) prev[j] = j;
+    for (var i = 1; i <= m; i++){
+      var cur = [i];
+      for (j = 1; j <= n; j++){
+        var cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+      }
+      prev = cur;
+    }
+    return prev[n];
+  }
+
+  function buildSpellCorpus(){
+    var map = {};
+    CORRECT_ITEMS.forEach(function(w){ map[normalizeHeb(w)] = w; });
+    items.forEach(function(i){ if (i.name) map[normalizeHeb(i.name.trim())] = i.name.trim(); });
+    history.forEach(function(run){
+      (run.items || []).forEach(function(i){ if (i.name) map[normalizeHeb(i.name.trim())] = i.name.trim(); });
+    });
+    return map;
+  }
+
+  function findSpellingSuggestion(raw){
+    var val = (raw || "").trim();
+    if (val.length < 2) return null;
+    var norm = normalizeHeb(val);
+    var corpus = buildSpellCorpus();
+    if (corpus[norm]) return null; // exact match already — nothing to suggest
+    var bestWord = null, bestDist = Infinity;
+    Object.keys(corpus).forEach(function(key){
+      if (Math.abs(key.length - norm.length) > 2) return;
+      var d = levenshtein(norm, key);
+      if (d < bestDist){ bestDist = d; bestWord = corpus[key]; }
+    });
+    var allowed = norm.length <= 4 ? 1 : 2;
+    if (bestWord && bestDist > 0 && bestDist <= allowed) return bestWord;
     return null;
   }
 
@@ -640,6 +748,9 @@
     itemInput: document.getElementById("itemInput"),
     categorySelect: document.getElementById("categorySelect"),
     catDot: document.getElementById("catDot"),
+    spellHint: document.getElementById("spellHint"),
+    spellWord: document.getElementById("spellWord"),
+    spellAccept: document.getElementById("spellAccept"),
     syncBanner: document.getElementById("syncBanner"),
     syncBannerText: document.getElementById("syncBannerText"),
     historyBtn: document.getElementById("historyBtn"),
@@ -677,7 +788,17 @@
 
   function catOf(key){ return CAT_BY_KEY[key] || CAT_BY_KEY.other; }
 
-  function normalizeName(s){ return (s || "").trim().toLowerCase(); }
+  // Used to tell whether two item names refer to "the same thing" — for
+  // duplicate checking and for skipping items already on the list when
+  // reusing a past run. Folds sofit letters, trims/lowercases, and treats
+  // a simple plural (ים/ות) as the same item as its singular.
+  function normalizeName(s){
+    var t = normalizeHeb((s || "").trim()).toLowerCase().replace(/\s+/g, " ");
+    if (t.length > 3 && (t.slice(-2) === "ים" || t.slice(-2) === "ות")){
+      t = t.slice(0, -2);
+    }
+    return t;
+  }
 
   function showToast(msg){
     var t = document.createElement("div");
@@ -912,11 +1033,40 @@
 
   var manualCat = false;
 
+  function hideSpellHint(){
+    els.spellHint.hidden = true;
+    els.spellWord.textContent = "";
+  }
+  function showSpellHint(word){
+    els.spellWord.textContent = word;
+    els.spellHint.hidden = false;
+  }
+
+  function isDuplicate(name){
+    var key = normalizeName(name);
+    if (!key) return false;
+    return items.some(function(i){ return normalizeName(i.name) === key; });
+  }
+
   els.itemInput.addEventListener("input", function(){
-    if (manualCat) return;
-    var guess = detectCategory(els.itemInput.value) || "other";
-    els.categorySelect.value = guess;
-    updateCatDot(guess);
+    if (!manualCat){
+      var guess = detectCategory(els.itemInput.value) || "other";
+      els.categorySelect.value = guess;
+      updateCatDot(guess);
+    }
+    var suggestion = findSpellingSuggestion(els.itemInput.value);
+    if (suggestion) showSpellHint(suggestion); else hideSpellHint();
+  });
+
+  els.spellAccept.addEventListener("click", function(){
+    els.itemInput.value = els.spellWord.textContent;
+    hideSpellHint();
+    if (!manualCat){
+      var guess = detectCategory(els.itemInput.value) || "other";
+      els.categorySelect.value = guess;
+      updateCatDot(guess);
+    }
+    els.itemInput.focus();
   });
 
   els.categorySelect.addEventListener("change", function(){
@@ -926,11 +1076,18 @@
 
   els.addForm.addEventListener("submit", function(e){
     e.preventDefault();
-    addItem(els.itemInput.value, els.categorySelect.value || "other");
+    var name = els.itemInput.value.trim();
+    if (!name) return;
+    if (isDuplicate(name)){
+      showToast("הפריט כבר ברשימה");
+      return;
+    }
+    addItem(name, els.categorySelect.value || "other");
     els.itemInput.value = "";
     manualCat = false;
     els.categorySelect.value = "other";
     updateCatDot("other");
+    hideSpellHint();
     els.itemInput.focus();
   });
 
