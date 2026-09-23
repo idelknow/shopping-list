@@ -666,6 +666,7 @@
     font-size:.82rem;
     color:var(--ink-muted);
   }
+  .house-lock-row + .house-lock-row{ margin-top:8px; }
   .link-btn{
     appearance:none;
     border:none;
@@ -937,8 +938,10 @@
         <div class="house-lock-row">
           <span id="houseSpaceLabel">🔒 קבוצה פרטית</span>
           <button type="button" id="spaceCopyLinkBtn" class="link-btn">העתקת קישור לשיתוף</button>
-          <button type="button" id="spaceEditNameBtn" class="link-btn">שינוי שם</button>
           <button type="button" id="spaceLeaveBtn" class="link-btn">חזרה לרשימת אידלמן</button>
+        </div>
+        <div class="house-lock-row">
+          <button type="button" id="spaceEditNameBtn" class="link-btn">שינוי שם</button>
         </div>
         <form id="spaceEditNameForm" class="house-text-form" hidden>
           <input type="text" id="spaceEditNameInput" placeholder="שם הקבוצה" autocomplete="off" maxlength="40" />
