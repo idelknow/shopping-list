@@ -779,13 +779,13 @@
     font-size:.88rem;
     color:var(--ink-muted);
   }
-  #lockForm{
+  .lock-card form{
     display:flex;
     flex-direction:column;
     align-items:center;
     gap:14px;
   }
-  #lockPinInput{
+  .lock-card form input{
     width:150px;
     text-align:center;
     font-size:1.6rem;
@@ -798,8 +798,8 @@
     border-radius:14px;
     outline:none;
   }
-  #lockPinInput:focus{ border-color:var(--accent); }
-  #lockForm button{
+  .lock-card form input:focus{ border-color:var(--accent); }
+  .lock-card form button{
     appearance:none;
     border:none;
     background:var(--accent);
@@ -928,26 +928,8 @@
       <button type="submit">מעבר</button>
     </form>
 
-    <div class="house-lock">
-      <div class="house-lock-row">
-        <span id="houseLockStatus">🔓 אין קוד לרשימה הזו</span>
-        <button type="button" id="houseLockSetBtn" class="link-btn">הוספת קוד</button>
-        <button type="button" id="houseLockRemoveBtn" class="link-btn danger" hidden>הסרת קוד</button>
-      </div>
-      <form id="houseLockForm" class="house-lock-form" hidden>
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="houseLockInput" placeholder="••••" autocomplete="off" />
-        <button type="submit">שמירה</button>
-        <button type="button" id="houseLockCancel" class="link-btn">ביטול</button>
-      </form>
-    </div>
-
     <div class="house-danger" id="houseDanger" hidden>
       <button type="button" id="houseDeleteBtn" class="link-btn danger">מחיקת הרשימה הזו</button>
-      <form id="houseDeleteForm" class="house-lock-form danger" hidden>
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="houseDeleteInput" placeholder="קוד" autocomplete="off" />
-        <button type="submit">מחיקה</button>
-        <button type="button" id="houseDeleteCancel" class="link-btn">ביטול</button>
-      </form>
     </div>
 
     <div class="house-space" id="houseSpaceSection">
@@ -999,19 +981,6 @@
         </div>
       </div>
     </div>
-  </div>
-</div>
-
-<div class="lock-screen" id="lockScreen" hidden>
-  <div class="lock-card">
-    <div class="lock-icon">🔒</div>
-    <h2 id="lockHouseName">הרשימה</h2>
-    <p>הרשימה הזו מוגנת בקוד בן 4 ספרות</p>
-    <form id="lockForm">
-      <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="lockPinInput" placeholder="••••" autocomplete="off" autofocus />
-      <button type="submit">כניסה</button>
-    </form>
-    <div class="lock-error" id="lockError" hidden>קוד שגוי, נסו שוב</div>
   </div>
 </div>
 
@@ -1170,11 +1139,13 @@
 
   var houseId = getHouseIdFromUrl();
 
-  // ---- PIN lock (per house) ----
+  // ---- PIN lock (per group) ----
   // Not real security — the app is static and Firestore stays readable by
-  // anyone with the config, same as always. This only keeps the list from
+  // anyone with the config, same as always. This only keeps a group from
   // opening for someone who doesn't know the code (a casual visitor, a
-  // borrowed phone, a forwarded link) — a screen-lock, not a vault.
+  // borrowed phone, a forwarded link) — a screen-lock, not a vault. Lists
+  // themselves have no PIN of their own; a group's code protects all the
+  // lists inside it at once.
   function simpleHash(str){
     var h = 5381;
     for (var i = 0; i < str.length; i++){ h = ((h * 33) ^ str.charCodeAt(i)) >>> 0; }
@@ -1189,8 +1160,6 @@
     }
     return Promise.resolve("sh_" + simpleHash(payload));
   }
-  function metaDoc(){ return db.doc(spacePrefix() + "houses/" + houseId + "/meta/settings"); }
-  function unlockKey(){ return "larder_unlock_" + houseId + spaceKeySuffix(); }
 
   // Hebrew final-form letters (ך ם ן ף ץ) only look like that at the very
   // end of a word — once a suffix like ים/ות is added they turn back into
@@ -1334,17 +1303,8 @@
     houseRecentList: document.getElementById("houseRecentList"),
     houseForm: document.getElementById("houseForm"),
     houseInput: document.getElementById("houseInput"),
-    houseLockStatus: document.getElementById("houseLockStatus"),
-    houseLockSetBtn: document.getElementById("houseLockSetBtn"),
-    houseLockRemoveBtn: document.getElementById("houseLockRemoveBtn"),
-    houseLockForm: document.getElementById("houseLockForm"),
-    houseLockInput: document.getElementById("houseLockInput"),
-    houseLockCancel: document.getElementById("houseLockCancel"),
     houseDanger: document.getElementById("houseDanger"),
     houseDeleteBtn: document.getElementById("houseDeleteBtn"),
-    houseDeleteForm: document.getElementById("houseDeleteForm"),
-    houseDeleteInput: document.getElementById("houseDeleteInput"),
-    houseDeleteCancel: document.getElementById("houseDeleteCancel"),
     pageTitle: document.getElementById("pageTitle"),
     houseSpaceCurrent: document.getElementById("houseSpaceCurrent"),
     houseSpaceLabel: document.getElementById("houseSpaceLabel"),
@@ -1374,12 +1334,7 @@
     spaceStartForm: document.getElementById("spaceStartForm"),
     spaceStartInput: document.getElementById("spaceStartInput"),
     spaceRecentWrap: document.getElementById("spaceRecentWrap"),
-    spaceRecentList: document.getElementById("spaceRecentList"),
-    lockScreen: document.getElementById("lockScreen"),
-    lockHouseName: document.getElementById("lockHouseName"),
-    lockForm: document.getElementById("lockForm"),
-    lockPinInput: document.getElementById("lockPinInput"),
-    lockError: document.getElementById("lockError")
+    spaceRecentList: document.getElementById("spaceRecentList")
   };
 
   CATEGORIES.forEach(function(c){
@@ -1818,124 +1773,19 @@
     els.syncBanner.hidden = true;
     subscribeHouseData();
     subscribeHouseIndex();
-    checkHouseLock();
+    updateHouseDangerUI();
     if (houseId !== "default") registerHouse(houseId);
     if (spaceId) loadSpaceMeta();
   }
 
-  // ---- lock screen ----
-  var currentPinHash = null;
-
-  function checkHouseLock(){
-    if (!db){ hideLockScreen(); updateLockSettingsUI(); return; }
-    metaDoc().get().then(function(snap){
-      var data = snap.exists ? snap.data() : null;
-      currentPinHash = (data && data.pinHash) ? data.pinHash : null;
-      updateLockSettingsUI();
-      if (!currentPinHash){ hideLockScreen(); return; }
-      var stored = null;
-      try{ stored = localStorage.getItem(unlockKey()); } catch(e){}
-      if (stored === currentPinHash) hideLockScreen();
-      else showLockScreen();
-    }).catch(function(){ hideLockScreen(); });
+  // ---- list deletion (no PIN of its own — see the group's PIN instead) ----
+  // Deleting the main list would strand everyone, so it's the one list
+  // this option never applies to. Also hidden while offline, since there's
+  // nothing to actually delete from without a synced database.
+  function updateHouseDangerUI(){
+    els.houseDanger.hidden = (houseId === "default") || !db;
   }
 
-  function showLockScreen(){
-    els.lockHouseName.textContent = houseDisplayName(houseId);
-    els.lockError.hidden = true;
-    els.lockPinInput.value = "";
-    els.lockScreen.hidden = false;
-    setTimeout(function(){ els.lockPinInput.focus(); }, 50);
-  }
-  function hideLockScreen(){ els.lockScreen.hidden = true; }
-
-  function showLockError(){
-    els.lockError.hidden = false;
-    els.lockPinInput.value = "";
-    els.lockPinInput.classList.remove("shake");
-    void els.lockPinInput.offsetWidth;
-    els.lockPinInput.classList.add("shake");
-    els.lockPinInput.focus();
-  }
-
-  els.lockForm.addEventListener("submit", function(e){
-    e.preventDefault();
-    var pin = els.lockPinInput.value.trim();
-    if (!/^\d{4}$/.test(pin)){ showLockError(); return; }
-    hashPin(pin, houseId).then(function(hash){
-      if (hash === currentPinHash){
-        try{ localStorage.setItem(unlockKey(), hash); } catch(e){}
-        hideLockScreen();
-      } else {
-        showLockError();
-      }
-    });
-  });
-
-  // ---- lock settings (inside the list switcher, for the CURRENT list) ----
-  function updateLockSettingsUI(){
-    if (!db){
-      els.houseLockStatus.textContent = "נעילה בקוד דורשת חיבור לסנכרון";
-      els.houseLockSetBtn.hidden = true;
-      els.houseLockRemoveBtn.hidden = true;
-      els.houseDanger.hidden = true;
-      return;
-    }
-    if (currentPinHash){
-      els.houseLockStatus.textContent = "🔒 הרשימה מוגנת בקוד";
-      els.houseLockSetBtn.hidden = true;
-      els.houseLockRemoveBtn.hidden = false;
-    } else {
-      els.houseLockStatus.textContent = "🔓 אין קוד לרשימה הזו";
-      els.houseLockSetBtn.hidden = false;
-      els.houseLockRemoveBtn.hidden = true;
-    }
-    // Deleting the main list would strand everyone, so it's the one list
-    // this option never applies to.
-    els.houseDanger.hidden = (houseId === "default");
-  }
-
-  els.houseLockSetBtn.addEventListener("click", function(){
-    els.houseLockForm.hidden = false;
-    els.houseLockInput.value = "";
-    els.houseLockInput.focus();
-  });
-  els.houseLockCancel.addEventListener("click", function(){
-    els.houseLockForm.hidden = true;
-  });
-  els.houseLockForm.addEventListener("submit", function(e){
-    e.preventDefault();
-    var pin = els.houseLockInput.value.trim();
-    if (!/^\d{4}$/.test(pin)){
-      showToast("קוד חייב להיות 4 ספרות");
-      return;
-    }
-    if (!db){ showToast("נעילה בקוד דורשת חיבור לסנכרון"); return; }
-    hashPin(pin, houseId).then(function(hash){
-      return metaDoc().set({ pinHash: hash }).then(function(){ return hash; });
-    }).then(function(hash){
-      currentPinHash = hash;
-      try{ localStorage.setItem(unlockKey(), hash); } catch(e){}
-      els.houseLockForm.hidden = true;
-      els.houseLockInput.value = "";
-      updateLockSettingsUI();
-      showToast("הוגדר קוד לרשימה");
-    }).catch(function(){ showToast("שמירת הקוד נכשלה"); });
-  });
-  els.houseLockRemoveBtn.addEventListener("click", function(){
-    if (!window.confirm("להסיר את הקוד מרשימה זו?")) return;
-    metaDoc().set({ pinHash: null }).then(function(){
-      currentPinHash = null;
-      try{ localStorage.removeItem(unlockKey()); } catch(e){}
-      updateLockSettingsUI();
-      showToast("הוסר הקוד");
-    }).catch(function(){ showToast("הסרת הקוד נכשלה"); });
-  });
-
-  // ---- deleting a list ----
-  // A protected list can only be deleted by someone who can type its code
-  // — being on an already-unlocked device isn't enough on its own, so the
-  // code is asked again right here, at the moment of a destructive action.
   function deleteHouseEverywhere(id){
     var itemsRef = db.collection(spacePrefix() + "houses/" + id + "/items");
     var historyRef = db.collection(spacePrefix() + "houses/" + id + "/history");
@@ -1951,7 +1801,6 @@
 
   function finishDeleteHouse(id){
     var label = houseDisplayName(id);
-    try{ localStorage.removeItem("larder_unlock_" + id + spaceKeySuffix()); } catch(e){}
     removeRecentHouse(id);
     switchHouse("default", "הרשימה הראשית", { silent: true });
     showToast('הרשימה "' + label + '" נמחקה');
@@ -1959,37 +1808,11 @@
 
   els.houseDeleteBtn.addEventListener("click", function(){
     if (!db) return;
-    if (currentPinHash){
-      els.houseDeleteForm.hidden = false;
-      els.houseDeleteInput.value = "";
-      els.houseDeleteInput.focus();
-    } else {
-      if (!window.confirm('למחוק את הרשימה "' + houseDisplayName(houseId) + '"? לא ניתן לבטל את זה.')) return;
-      var idToDelete = houseId;
-      deleteHouseEverywhere(idToDelete).then(function(){
-        finishDeleteHouse(idToDelete);
-      }).catch(function(){ showToast("המחיקה נכשלה"); });
-    }
-  });
-  els.houseDeleteCancel.addEventListener("click", function(){
-    els.houseDeleteForm.hidden = true;
-  });
-  els.houseDeleteForm.addEventListener("submit", function(e){
-    e.preventDefault();
-    var pin = els.houseDeleteInput.value.trim();
-    if (!/^\d{4}$/.test(pin)) return;
-    hashPin(pin, houseId).then(function(hash){
-      if (hash !== currentPinHash){
-        showToast("קוד שגוי");
-        els.houseDeleteInput.value = "";
-        return;
-      }
-      var idToDelete = houseId;
-      els.houseDeleteForm.hidden = true;
-      deleteHouseEverywhere(idToDelete).then(function(){
-        finishDeleteHouse(idToDelete);
-      }).catch(function(){ showToast("המחיקה נכשלה"); });
-    });
+    if (!window.confirm('למחוק את הרשימה "' + houseDisplayName(houseId) + '"? לא ניתן לבטל את זה.')) return;
+    var idToDelete = houseId;
+    deleteHouseEverywhere(idToDelete).then(function(){
+      finishDeleteHouse(idToDelete);
+    }).catch(function(){ showToast("המחיקה נכשלה"); });
   });
 
   // ---- house chip + switcher modal ----
@@ -2056,11 +1879,10 @@
     render();
   }
 
-  // Loads the group's own chosen name (if one was ever set) once synced —
-  // until this resolves, the name shown is just guessed from the link.
   // Loads the group's own name and entry PIN (if any) once synced, and
   // shows the group's lock screen when it's protected and this device
-  // hasn't unlocked it yet — mirrors checkHouseLock, one level up.
+  // hasn't unlocked it yet. Until this resolves, the name shown anywhere
+  // is just guessed from the link.
   function loadSpaceMeta(){
     if (!db || !spaceId){ updateSpaceLockSettingsUI(); return; }
     spaceMetaDoc().get().then(function(snap){
@@ -2292,9 +2114,7 @@
   function openHouseModal(){
     renderHouseRecents();
     els.houseInput.value = "";
-    els.houseLockForm.hidden = true;
-    els.houseDeleteForm.hidden = true;
-    updateLockSettingsUI();
+    updateHouseDangerUI();
     updateSpaceSectionUI();
     els.houseModal.classList.add("show");
     els.houseModal.setAttribute("aria-hidden","false");
@@ -2316,13 +2136,12 @@
     runHistory = [];
     gotitOpen = false;
     render();
-    currentPinHash = null;
     if (mode === "sync" && db){
       subscribeHouseData();
-      checkHouseLock();
+      updateHouseDangerUI();
     } else {
       startLocal();
-      updateLockSettingsUI();
+      updateHouseDangerUI();
     }
     closeHouseModal();
     closeDrawer();
