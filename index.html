@@ -712,6 +712,13 @@
   }
   .house-lock-form.danger button[type="submit"]{ background:var(--danger); }
   .house-danger{ margin-top:12px; }
+  .house-space{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .house-space .house-modal-hint{ margin-bottom:8px; }
+  .house-space .house-form{ margin-top:8px; }
 
   .lock-screen{
     position:fixed; inset:0;
@@ -816,7 +823,7 @@
       </button>
     </div>
     <div class="titles">
-      <h1>רשימת הקניות של משפחת אידלמן</h1>
+      <h1 id="pageTitle">רשימת הקניות של משפחת אידלמן</h1>
       <button class="history-btn" id="historyBtn" type="button">
         <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.2" stroke="currentColor" stroke-width="1.4"/><path d="M10 6.3V10l2.6 1.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         היסטוריה
@@ -906,6 +913,28 @@
         <button type="button" id="houseDeleteCancel" class="link-btn">ביטול</button>
       </form>
     </div>
+
+    <div class="house-space" id="houseSpaceSection">
+      <div id="houseSpaceCurrent" hidden>
+        <div class="house-lock-row">
+          <span id="houseSpaceLabel">🔒 קבוצה פרטית</span>
+          <button type="button" id="spaceCopyLinkBtn" class="link-btn">העתקת קישור לשיתוף</button>
+          <button type="button" id="spaceLeaveBtn" class="link-btn">חזרה לרשימת אידלמן</button>
+        </div>
+      </div>
+      <div id="houseSpaceStart" hidden>
+        <p class="house-modal-hint">לא קשורים למשפחת אידלמן? אפשר להשתמש באותו אתר, עם רשימות פרטיות משלכם שלא מתערבבות עם שלנו.</p>
+        <button type="button" id="spaceStartBtn" class="link-btn">התחלת קבוצה פרטית משלכם</button>
+        <form id="spaceStartForm" class="house-form" hidden>
+          <input type="text" id="spaceStartInput" placeholder="שם הקבוצה, למשל המשרד…" autocomplete="off" maxlength="40" />
+          <button type="submit">יצירה</button>
+        </form>
+        <div id="spaceRecentWrap" hidden>
+          <p class="house-modal-hint" style="margin:12px 0 6px;">קבוצות שכבר פתחתם מהמכשיר הזה:</p>
+          <div id="spaceRecentList" class="house-recent"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -928,6 +957,77 @@
 
   var BASE_TITLE = document.title || "רשימת הקניות של משפחת אידלמן";
 
+  // ---- private spaces ----
+  // A "space" is a whole separate universe of lists, for someone who isn't
+  // part of the family using this same page/app. It's carried in the URL
+  // (?space=...) and just changes the Firestore path prefix everything is
+  // stored under (spaces/<id>/...), so a stranger's lists never mix with
+  // the family's and vice versa. No ?space= at all means the original,
+  // unchanged Idelman-family data (same paths as always — nothing to
+  // migrate). Like the house PIN, this is privacy by having the link/code,
+  // not real accounts.
+  var RECENT_SPACES_KEY = "larder_recent_spaces_v1";
+
+  function sanitizeSpaceId(raw){
+    var s = (raw || "").trim().toLowerCase();
+    s = s.replace(/[^a-z0-9֐-׿]+/g, "-").replace(/^-+|-+$/g, "");
+    return s.slice(0, 60);
+  }
+  function spaceDisplayName(id, fallbackLabel){
+    if (fallbackLabel) return fallbackLabel;
+    if (!id) return "";
+    return id.replace(/-[a-z0-9]{4}$/, "").replace(/-/g, " ") || id;
+  }
+  function getSpaceIdFromUrl(){
+    try{
+      var params = new URLSearchParams(location.search);
+      return sanitizeSpaceId(params.get("space") || "");
+    } catch(e){ return ""; }
+  }
+  function randomCode(){ return Math.random().toString(36).slice(2, 6); }
+  function loadRecentSpaces(){
+    try{
+      var raw = localStorage.getItem(RECENT_SPACES_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch(e){ return []; }
+  }
+  function saveRecentSpace(id, label){
+    try{
+      var list = loadRecentSpaces().filter(function(s){ return s.id !== id; });
+      list.unshift({ id: id, label: label || spaceDisplayName(id) });
+      localStorage.setItem(RECENT_SPACES_KEY, JSON.stringify(list.slice(0, 6)));
+    } catch(e){}
+  }
+  function goToSpace(id){
+    try{
+      var url = new URL(location.href);
+      if (id) url.searchParams.set("space", id); else url.searchParams.delete("space");
+      url.searchParams.delete("house");
+      location.href = url.toString();
+    } catch(e){}
+  }
+
+  var spaceId = getSpaceIdFromUrl();
+  // Every storage path (Firestore and localStorage) is scoped through
+  // these two so the default (no-space) case is byte-for-byte identical
+  // to the keys/paths this app already used — existing family data and
+  // devices need no migration at all.
+  function spacePrefix(){ return spaceId ? ("spaces/" + spaceId + "/") : ""; }
+  function spaceKeySuffix(){ return spaceId ? ("_sp_" + spaceId) : ""; }
+
+  // A group using its own private space sees its own name everywhere the
+  // page said "משפחת אידלמן" (page title, browser tab) — the family's
+  // wording stays exactly as before when there's no ?space= at all.
+  if (spaceId){
+    var spaceLabel = spaceDisplayName(spaceId);
+    BASE_TITLE = spaceLabel ? ("רשימת הקניות של " + spaceLabel) : "רשימת קניות משותפת";
+    try{
+      var pageTitleEl = document.getElementById("pageTitle");
+      if (pageTitleEl) pageTitleEl.textContent = BASE_TITLE;
+    } catch(e){}
+    saveRecentSpace(spaceId, spaceLabel);
+  }
+
   // ---- multiple lists ("houses") ----
   // Each list is identified by a slug carried in the URL (?house=...), so
   // every list gets its own shareable link. Data lives at
@@ -935,6 +1035,7 @@
   // share the one Firebase project. "default" is the plain link with no
   // ?house= param, shown to people as "הרשימה הראשית".
   var RECENT_HOUSES_KEY = "larder_recent_houses_v1";
+  function recentHousesKey(){ return RECENT_HOUSES_KEY + spaceKeySuffix(); }
 
   function sanitizeHouseId(raw){
     var s = (raw || "").trim().toLowerCase();
@@ -962,7 +1063,7 @@
   }
   function loadRecentHouses(){
     try{
-      var raw = localStorage.getItem(RECENT_HOUSES_KEY);
+      var raw = localStorage.getItem(recentHousesKey());
       return raw ? JSON.parse(raw) : [];
     } catch(e){ return []; }
   }
@@ -970,13 +1071,13 @@
     try{
       var list = loadRecentHouses().filter(function(h){ return h.id !== id; });
       list.unshift({ id: id, label: label || houseDisplayName(id) });
-      localStorage.setItem(RECENT_HOUSES_KEY, JSON.stringify(list.slice(0, 8)));
+      localStorage.setItem(recentHousesKey(), JSON.stringify(list.slice(0, 8)));
     } catch(e){}
   }
   function removeRecentHouse(id){
     try{
       var list = loadRecentHouses().filter(function(h){ return h.id !== id; });
-      localStorage.setItem(RECENT_HOUSES_KEY, JSON.stringify(list));
+      localStorage.setItem(recentHousesKey(), JSON.stringify(list));
     } catch(e){}
   }
 
@@ -1001,8 +1102,8 @@
     }
     return Promise.resolve("sh_" + simpleHash(payload));
   }
-  function metaDoc(){ return db.doc("houses/" + houseId + "/meta/settings"); }
-  function unlockKey(){ return "larder_unlock_" + houseId; }
+  function metaDoc(){ return db.doc(spacePrefix() + "houses/" + houseId + "/meta/settings"); }
+  function unlockKey(){ return "larder_unlock_" + houseId + spaceKeySuffix(); }
 
   // Hebrew final-form letters (ך ם ן ף ץ) only look like that at the very
   // end of a word — once a suffix like ים/ות is added they turn back into
@@ -1095,7 +1196,7 @@
     var map = {};
     CORRECT_ITEMS.forEach(function(w){ map[normalizeHeb(w)] = w; });
     items.forEach(function(i){ if (i.name) map[normalizeHeb(i.name.trim())] = i.name.trim(); });
-    history.forEach(function(run){
+    runHistory.forEach(function(run){
       (run.items || []).forEach(function(i){ if (i.name) map[normalizeHeb(i.name.trim())] = i.name.trim(); });
     });
     return map;
@@ -1157,6 +1258,17 @@
     houseDeleteForm: document.getElementById("houseDeleteForm"),
     houseDeleteInput: document.getElementById("houseDeleteInput"),
     houseDeleteCancel: document.getElementById("houseDeleteCancel"),
+    pageTitle: document.getElementById("pageTitle"),
+    houseSpaceCurrent: document.getElementById("houseSpaceCurrent"),
+    houseSpaceLabel: document.getElementById("houseSpaceLabel"),
+    spaceCopyLinkBtn: document.getElementById("spaceCopyLinkBtn"),
+    spaceLeaveBtn: document.getElementById("spaceLeaveBtn"),
+    houseSpaceStart: document.getElementById("houseSpaceStart"),
+    spaceStartBtn: document.getElementById("spaceStartBtn"),
+    spaceStartForm: document.getElementById("spaceStartForm"),
+    spaceStartInput: document.getElementById("spaceStartInput"),
+    spaceRecentWrap: document.getElementById("spaceRecentWrap"),
+    spaceRecentList: document.getElementById("spaceRecentList"),
     lockScreen: document.getElementById("lockScreen"),
     lockHouseName: document.getElementById("lockHouseName"),
     lockForm: document.getElementById("lockForm"),
@@ -1174,12 +1286,14 @@
 
   var gotitOpen = false;
   var items = [];
-  var history = [];
+  // Named runHistory (not "history") so it never shadows window.history —
+  // setHouseInUrl/pushState relies on that global staying reachable.
+  var runHistory = [];
   var lastSortedHistory = [];
 
   var db = null;
   var mode = "connecting"; // "sync" | "local"
-  function localKey(){ return "larder_local_he_v1_" + houseId; }
+  function localKey(){ return "larder_local_he_v1_" + houseId + spaceKeySuffix(); }
 
   function nowIso(){ return new Date().toISOString(); }
   function uid(){ return "l" + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
@@ -1194,12 +1308,14 @@
 
   // Every list ("house") gets its own subtree in Firestore, so switching
   // lists is just switching which path these point at.
-  function itemsCol(){ return db.collection("houses/" + houseId + "/items"); }
-  function historyCol(){ return db.collection("houses/" + houseId + "/history"); }
+  function itemsCol(){ return db.collection(spacePrefix() + "houses/" + houseId + "/items"); }
+  function historyCol(){ return db.collection(spacePrefix() + "houses/" + houseId + "/history"); }
   // A shared, synced directory of every list anyone has created — this is
   // what makes a new list show up in everyone's switcher, not just the
   // phone that made it (localStorage alone never leaves that device).
-  function housesIndexCol(){ return db.collection("houses_index"); }
+  // Scoped by spacePrefix() too, so a private space gets its own directory
+  // instead of showing up alongside the family's lists.
+  function housesIndexCol(){ return db.collection(spacePrefix() + "houses_index"); }
 
   // Used to tell whether two item names refer to "the same thing" — for
   // duplicate checking and for skipping items already on the list when
@@ -1314,7 +1430,7 @@
   }
 
   function saveLocal(){
-    try{ localStorage.setItem(localKey(), JSON.stringify({ items: items, history: history })); } catch(e){}
+    try{ localStorage.setItem(localKey(), JSON.stringify({ items: items, history: runHistory })); } catch(e){}
   }
   function loadLocal(){
     try{
@@ -1322,7 +1438,7 @@
       if (raw){
         var parsed = JSON.parse(raw);
         items = parsed.items || [];
-        history = parsed.history || [];
+        runHistory = parsed.history || [];
       }
     } catch(e){}
   }
@@ -1378,18 +1494,18 @@
       });
     } else {
       entry.id = uid();
-      history.unshift(entry);
+      runHistory.unshift(entry);
       items = items.filter(function(i){ return !i.checked; });
       saveLocal(); render(); renderHistory();
     }
   }
 
   function renderHistory(){
-    if (!history.length){
+    if (!runHistory.length){
       els.drawerBody.innerHTML = '<div class="hist-empty">📭<br>עדיין אין רשימות שנוקו.</div>';
       return;
     }
-    var sorted = history.slice().sort(function(a,b){ return b.completedAt.localeCompare(a.completedAt); });
+    var sorted = runHistory.slice().sort(function(a,b){ return b.completedAt.localeCompare(a.completedAt); });
     lastSortedHistory = sorted;
     els.drawerBody.innerHTML = sorted.map(function(run, idx){
       var d = new Date(run.completedAt);
@@ -1561,7 +1677,7 @@
     });
 
     unsubHistory = historyCol().orderBy("completedAt","desc").limit(20).onSnapshot(function(snap){
-      history = snap.docs.map(function(d){
+      runHistory = snap.docs.map(function(d){
         var data = d.data() || {};
         return { id: d.id, items: data.items || [], completedAt: data.completedAt || "", count: data.count };
       });
@@ -1714,21 +1830,21 @@
   // — being on an already-unlocked device isn't enough on its own, so the
   // code is asked again right here, at the moment of a destructive action.
   function deleteHouseEverywhere(id){
-    var itemsRef = db.collection("houses/" + id + "/items");
-    var historyRef = db.collection("houses/" + id + "/history");
+    var itemsRef = db.collection(spacePrefix() + "houses/" + id + "/items");
+    var historyRef = db.collection(spacePrefix() + "houses/" + id + "/history");
     return Promise.all([itemsRef.get(), historyRef.get()]).then(function(results){
       var batch = db.batch();
       results[0].docs.forEach(function(d){ batch.delete(d.ref); });
       results[1].docs.forEach(function(d){ batch.delete(d.ref); });
-      batch.delete(db.doc("houses/" + id + "/meta/settings"));
-      batch.delete(db.doc("houses_index/" + id));
+      batch.delete(db.doc(spacePrefix() + "houses/" + id + "/meta/settings"));
+      batch.delete(db.doc(spacePrefix() + "houses_index/" + id));
       return batch.commit();
     });
   }
 
   function finishDeleteHouse(id){
     var label = houseDisplayName(id);
-    try{ localStorage.removeItem("larder_unlock_" + id); } catch(e){}
+    try{ localStorage.removeItem("larder_unlock_" + id + spaceKeySuffix()); } catch(e){}
     removeRecentHouse(id);
     switchHouse("default", "הרשימה הראשית", { silent: true });
     showToast('הרשימה "' + label + '" נמחקה');
@@ -1793,12 +1909,64 @@
     });
   }
 
+  function updateSpaceSectionUI(){
+    if (spaceId){
+      els.houseSpaceCurrent.hidden = false;
+      els.houseSpaceStart.hidden = true;
+      els.houseSpaceLabel.textContent = "🔒 קבוצה: " + spaceDisplayName(spaceId);
+    } else {
+      els.houseSpaceCurrent.hidden = true;
+      els.houseSpaceStart.hidden = false;
+      els.spaceStartForm.hidden = true;
+      els.spaceStartInput.value = "";
+      var recents = loadRecentSpaces();
+      if (recents.length){
+        els.spaceRecentWrap.hidden = false;
+        els.spaceRecentList.innerHTML = recents.map(function(s){
+          return '<button type="button" class="house-pill" data-space="' + escapeHtml(s.id) + '">🔒 ' + escapeHtml(s.label) + '</button>';
+        }).join("");
+        els.spaceRecentList.querySelectorAll(".house-pill").forEach(function(btn){
+          btn.onclick = function(){ goToSpace(btn.dataset.space); };
+        });
+      } else {
+        els.spaceRecentWrap.hidden = true;
+      }
+    }
+  }
+
+  els.spaceStartBtn.addEventListener("click", function(){
+    els.spaceStartForm.hidden = false;
+    els.spaceStartInput.value = "";
+    els.spaceStartInput.focus();
+  });
+  els.spaceStartForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = els.spaceStartInput.value.trim();
+    if (!name) return;
+    var base = sanitizeSpaceId(name) || "group";
+    var id = base + "-" + randomCode();
+    saveRecentSpace(id, name);
+    goToSpace(id);
+  });
+  els.spaceCopyLinkBtn.addEventListener("click", function(){
+    var link = location.href;
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(link).then(function(){ showToast("הקישור הועתק"); }).catch(function(){ showToast(link); });
+    } else {
+      showToast(link);
+    }
+  });
+  els.spaceLeaveBtn.addEventListener("click", function(){
+    goToSpace("");
+  });
+
   function openHouseModal(){
     renderHouseRecents();
     els.houseInput.value = "";
     els.houseLockForm.hidden = true;
     els.houseDeleteForm.hidden = true;
     updateLockSettingsUI();
+    updateSpaceSectionUI();
     els.houseModal.classList.add("show");
     els.houseModal.setAttribute("aria-hidden","false");
   }
@@ -1816,7 +1984,7 @@
     registerHouse(id, label);
     renderHouseChip();
     items = [];
-    history = [];
+    runHistory = [];
     gotitOpen = false;
     render();
     currentPinHash = null;
