@@ -1174,6 +1174,10 @@
   // lists is just switching which path these point at.
   function itemsCol(){ return db.collection("houses/" + houseId + "/items"); }
   function historyCol(){ return db.collection("houses/" + houseId + "/history"); }
+  // A shared, synced directory of every list anyone has created — this is
+  // what makes a new list show up in everyone's switcher, not just the
+  // phone that made it (localStorage alone never leaves that device).
+  function housesIndexCol(){ return db.collection("houses_index"); }
 
   // Used to tell whether two item names refer to "the same thing" — for
   // duplicate checking and for skipping items already on the list when
@@ -1543,12 +1547,35 @@
     }, function(){});
   }
 
+  var sharedHouses = [];
+  var unsubHouseIndex = null;
+
+  function subscribeHouseIndex(){
+    if (unsubHouseIndex) return;
+    unsubHouseIndex = housesIndexCol().orderBy("updatedAt","desc").limit(50).onSnapshot(function(snap){
+      sharedHouses = snap.docs.map(function(d){
+        var data = d.data() || {};
+        return { id: d.id, label: data.label || houseDisplayName(d.id) };
+      });
+    }, function(){});
+  }
+
+  function registerHouse(id, label){
+    if (!db || id === "default") return;
+    housesIndexCol().doc(id).set({
+      label: label || houseDisplayName(id),
+      updatedAt: nowIso()
+    }, { merge: true }).catch(function(){});
+  }
+
   function startSync(database){
     mode = "sync";
     db = database;
     els.syncBanner.hidden = true;
     subscribeHouseData();
+    subscribeHouseIndex();
     checkHouseLock();
+    if (houseId !== "default") registerHouse(houseId);
   }
 
   // ---- lock screen ----
@@ -1662,14 +1689,17 @@
   }
 
   function renderHouseRecents(){
-    var recents = loadRecentHouses();
-    if (!recents.some(function(h){ return h.id === "default"; })){
-      recents.push({ id: "default", label: "הרשימה הראשית" });
+    var list = [];
+    var seen = {};
+    function add(h){ if (h && h.id && !seen[h.id]){ seen[h.id] = true; list.push(h); } }
+    add({ id: "default", label: "הרשימה הראשית" });
+    add({ id: houseId, label: houseDisplayName(houseId) });
+    if (mode === "sync" && sharedHouses.length){
+      sharedHouses.forEach(add);
+    } else {
+      loadRecentHouses().forEach(add);
     }
-    if (!recents.some(function(h){ return h.id === houseId; })){
-      recents.unshift({ id: houseId, label: houseDisplayName(houseId) });
-    }
-    els.houseRecentList.innerHTML = recents.map(function(h){
+    els.houseRecentList.innerHTML = list.map(function(h){
       return '<button type="button" class="house-pill' + (h.id === houseId ? " active" : "") + '" data-house="' + escapeHtml(h.id) + '" data-label="' + escapeHtml(h.label) + '">🏠 ' + escapeHtml(h.label) + '</button>';
     }).join("");
     els.houseRecentList.querySelectorAll(".house-pill").forEach(function(btn){
@@ -1696,6 +1726,7 @@
     houseId = id;
     setHouseInUrl(id);
     saveRecentHouse(id, label);
+    registerHouse(id, label);
     renderHouseChip();
     items = [];
     history = [];
