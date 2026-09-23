@@ -803,6 +803,55 @@
   }
   .house-space .house-modal-hint{ margin-bottom:8px; }
   .house-space .house-form{ margin-top:8px; }
+  .option-list{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+  .option-row{
+    appearance:none;
+    border:none;
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:11px;
+    background:var(--surface-2);
+    color:var(--ink);
+    font:inherit;
+    font-size:.88rem;
+    font-weight:700;
+    text-align:right;
+    padding:10px 12px;
+    border-radius:12px;
+    cursor:pointer;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .option-row:hover{ background:var(--surface); }
+  .option-row:active{ transform:scale(.98); }
+  .option-row .option-icon{
+    flex:none;
+    width:30px;
+    height:30px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1rem;
+    background:var(--surface);
+    border-radius:9px;
+  }
+  .option-row .option-text{
+    flex:1 1 auto;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .option-row .option-text::before{
+    content:"•";
+    color:var(--accent-2);
+    font-weight:700;
+  }
+  .option-row.danger{ color:var(--danger); }
+  .option-row.danger .option-text::before{ color:var(--danger); }
   .house-text-form{
     display:flex;
     align-items:center;
@@ -1063,18 +1112,30 @@
     </form>
 
     <div class="house-danger" id="houseDanger" hidden>
-      <button type="button" id="houseDeleteBtn" class="link-btn danger">מחיקת הרשימה הזו</button>
+      <div class="option-list">
+        <button type="button" id="houseDeleteBtn" class="option-row danger">
+          <span class="option-icon">🗑️</span>
+          <span class="option-text">מחיקת הרשימה הזו</span>
+        </button>
+      </div>
     </div>
 
     <div class="house-space" id="houseSpaceSection">
       <div id="houseSpaceCurrent" hidden>
-        <div class="house-lock-row">
-          <span id="houseSpaceLabel">👥 קבוצה</span>
-          <button type="button" id="spaceCopyLinkBtn" class="link-btn">העתקת קישור לשיתוף</button>
-          <button type="button" id="spaceLeaveBtn" class="link-btn">חזרה לדף הבית</button>
-        </div>
-        <div class="house-lock-row">
-          <button type="button" id="spaceEditNameBtn" class="link-btn">שינוי שם</button>
+        <p class="house-modal-hint" id="houseSpaceLabel">👥 קבוצה</p>
+        <div class="option-list">
+          <button type="button" id="spaceCopyLinkBtn" class="option-row">
+            <span class="option-icon">🔗</span>
+            <span class="option-text">העתקת קישור לשיתוף</span>
+          </button>
+          <button type="button" id="spaceEditNameBtn" class="option-row">
+            <span class="option-icon">✏️</span>
+            <span class="option-text">שינוי שם</span>
+          </button>
+          <button type="button" id="spaceLeaveBtn" class="option-row">
+            <span class="option-icon">🏠</span>
+            <span class="option-text">חזרה לדף הבית</span>
+          </button>
         </div>
         <form id="spaceEditNameForm" class="house-text-form" hidden>
           <input type="text" id="spaceEditNameInput" placeholder="שם הקבוצה" autocomplete="off" maxlength="40" />
@@ -1083,12 +1144,22 @@
         </form>
 
         <div class="house-danger" id="spaceDangerSection">
-          <button type="button" id="spaceDeleteBtn" class="link-btn danger">מחיקת הקבוצה כולה</button>
+          <div class="option-list">
+            <button type="button" id="spaceDeleteBtn" class="option-row danger">
+              <span class="option-icon">🗑️</span>
+              <span class="option-text">מחיקת הקבוצה כולה</span>
+            </button>
+          </div>
         </div>
       </div>
       <div id="houseSpaceStart" hidden>
         <p class="house-modal-hint">רוצים קבוצה חדשה משלכם?</p>
-        <button type="button" id="spaceStartBtn" class="link-btn">התחלת קבוצה פרטית משלכם</button>
+        <div class="option-list">
+          <button type="button" id="spaceStartBtn" class="option-row">
+            <span class="option-icon">✨</span>
+            <span class="option-text">התחלת קבוצה פרטית משלכם</span>
+          </button>
+        </div>
         <form id="spaceStartForm" class="house-form" hidden>
           <input type="text" id="spaceStartInput" placeholder="שם הקבוצה, למשל המשרד…" autocomplete="off" maxlength="40" />
           <button type="submit">יצירה</button>
