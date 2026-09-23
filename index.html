@@ -151,6 +151,28 @@
     justify-content:center;
   }
   .hero-art{ width:100%; max-width:230px; height:auto; display:block; }
+
+  .house-bar{ display:flex; justify-content:center; margin-bottom:10px; }
+  .house-chip{
+    appearance:none;
+    border:1px solid var(--line);
+    background:var(--surface);
+    color:var(--ink-muted);
+    font:inherit;
+    font-size:.78rem;
+    font-weight:600;
+    padding:6px 12px;
+    border-radius:999px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    max-width:100%;
+  }
+  .house-chip:hover{ color:var(--accent-2); border-color:var(--accent); }
+  .house-chip svg{ width:13px; height:13px; flex:none; }
+  .house-chip .caret{ width:11px; height:11px; opacity:.7; }
+  .house-chip span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:44vw; }
   h1{
     font-family:'Rubik',sans-serif;
     font-weight:800;
@@ -538,6 +560,228 @@
     text-align:center;
     padding:44px 10px;
   }
+
+  .house-modal{
+    position:fixed; inset:0;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    background:rgba(20,22,17,.36);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .18s;
+    z-index:30;
+    padding:16px;
+  }
+  .house-modal.show{ opacity:1; pointer-events:auto; }
+  .house-modal-card{
+    width:100%;
+    max-width:420px;
+    background:var(--surface);
+    border-radius:20px 20px 0 0;
+    padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));
+    transform:translateY(16px);
+    transition:transform .2s ease;
+    max-height:80vh;
+    display:flex;
+    flex-direction:column;
+  }
+  .house-modal.show .house-modal-card{ transform:translateY(0); }
+  @media (min-width:560px){
+    .house-modal{ align-items:center; }
+    .house-modal-card{ border-radius:20px; }
+  }
+  .house-modal-hint{
+    margin:0 0 14px;
+    font-size:.82rem;
+    color:var(--ink-muted);
+    line-height:1.5;
+  }
+  .house-recent{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:14px;
+    overflow-y:auto;
+  }
+  .house-pill{
+    appearance:none;
+    border:1px solid var(--line);
+    background:var(--surface-2);
+    color:var(--ink);
+    font:inherit;
+    font-size:.82rem;
+    font-weight:600;
+    padding:8px 13px;
+    border-radius:999px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .house-pill.active{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .house-pill:not(.active):hover{ border-color:var(--accent); color:var(--accent-2); }
+  .house-form{
+    display:flex;
+    gap:8px;
+    background:var(--surface-2);
+    border-radius:14px;
+    padding:6px;
+  }
+  .house-form input{
+    flex:1 1 auto;
+    min-width:0;
+    border:none;
+    background:transparent;
+    color:var(--ink);
+    font:inherit;
+    font-size:.92rem;
+    padding:9px 11px;
+    outline:none;
+  }
+  .house-form button{
+    flex:none;
+    appearance:none;
+    border:none;
+    background:var(--accent);
+    color:var(--accent-ink);
+    font:inherit;
+    font-size:.82rem;
+    font-weight:700;
+    padding:0 16px;
+    border-radius:10px;
+    cursor:pointer;
+  }
+
+  .house-lock{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .house-lock-row{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    font-size:.82rem;
+    color:var(--ink-muted);
+  }
+  .link-btn{
+    appearance:none;
+    border:none;
+    background:none;
+    color:var(--accent-2);
+    font:inherit;
+    font-size:.82rem;
+    font-weight:700;
+    cursor:pointer;
+    padding:0;
+  }
+  .link-btn.danger{ color:var(--danger); }
+  .house-lock-form{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:10px;
+  }
+  .house-lock-form input{
+    width:84px;
+    text-align:center;
+    letter-spacing:.35em;
+    font-size:1.1rem;
+    font-weight:700;
+    border:1px solid var(--line);
+    background:var(--surface-2);
+    color:var(--ink);
+    border-radius:10px;
+    padding:8px 6px;
+    outline:none;
+  }
+  .house-lock-form input:focus{ border-color:var(--accent); }
+  .house-lock-form button[type="submit"]{
+    appearance:none;
+    border:none;
+    background:var(--accent);
+    color:var(--accent-ink);
+    font:inherit;
+    font-size:.8rem;
+    font-weight:700;
+    padding:8px 14px;
+    border-radius:10px;
+    cursor:pointer;
+  }
+
+  .lock-screen{
+    position:fixed; inset:0;
+    background:var(--bg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  .lock-card{
+    width:100%;
+    max-width:320px;
+    text-align:center;
+  }
+  .lock-icon{ font-size:2.6rem; margin-bottom:8px; }
+  .lock-card h2{
+    font-family:'Rubik',sans-serif;
+    font-weight:800;
+    font-size:1.2rem;
+    margin:0 0 6px;
+  }
+  .lock-card p{
+    margin:0 0 20px;
+    font-size:.88rem;
+    color:var(--ink-muted);
+  }
+  #lockForm{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+  }
+  #lockPinInput{
+    width:150px;
+    text-align:center;
+    font-size:1.6rem;
+    font-weight:800;
+    letter-spacing:.5em;
+    padding:12px 10px 12px 20px;
+    border:1.5px solid var(--line);
+    background:var(--surface);
+    color:var(--ink);
+    border-radius:14px;
+    outline:none;
+  }
+  #lockPinInput:focus{ border-color:var(--accent); }
+  #lockForm button{
+    appearance:none;
+    border:none;
+    background:var(--accent);
+    color:var(--accent-ink);
+    font:inherit;
+    font-size:.9rem;
+    font-weight:700;
+    padding:10px 28px;
+    border-radius:999px;
+    cursor:pointer;
+  }
+  .lock-error{
+    margin-top:14px;
+    font-size:.82rem;
+    color:var(--danger);
+    font-weight:600;
+  }
+  @keyframes shake{
+    10%,90%{ transform:translateX(-1px); }
+    20%,80%{ transform:translateX(2px); }
+    30%,50%,70%{ transform:translateX(-4px); }
+    40%,60%{ transform:translateX(4px); }
+  }
+  .shake{ animation:shake .4s; }
 </style>
 </head>
 <body>
@@ -561,6 +805,13 @@
         <ellipse cx="215" cy="58" rx="9" ry="6" fill="#2F9E45" opacity=".8" transform="rotate(-18 215 58)"/>
         <ellipse cx="46" cy="60" rx="9" ry="6" fill="#F0923E" opacity=".8" transform="rotate(18 46 60)"/>
       </svg>
+    </div>
+    <div class="house-bar">
+      <button class="house-chip" id="houseChip" type="button">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M3 9.5L10 4l7 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 8.5V16h10V8.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        <span id="houseChipLabel">הרשימה הראשית</span>
+        <svg class="caret" viewBox="0 0 20 20" fill="none"><path d="M6 8l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
     <div class="titles">
       <h1>רשימת הקניות של משפחת אידלמן</h1>
@@ -617,11 +868,124 @@
   </div>
 </div>
 
+<div class="house-modal" id="houseModal" aria-hidden="true">
+  <div class="house-modal-card">
+    <div class="drawer-head">
+      <h2>רשימות</h2>
+      <button class="drawer-close" id="houseModalClose" type="button">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <p class="house-modal-hint">כל רשימה מקבלת קישור נפרד משלה. שתפו את הקישור עם מי שצריך לראות אותה.</p>
+    <div id="houseRecentList" class="house-recent"></div>
+    <form id="houseForm" class="house-form">
+      <input type="text" id="houseInput" placeholder="שם רשימה חדשה, למשל בית ההורים…" autocomplete="off" maxlength="40" />
+      <button type="submit">מעבר</button>
+    </form>
+
+    <div class="house-lock">
+      <div class="house-lock-row">
+        <span id="houseLockStatus">🔓 אין קוד לרשימה הזו</span>
+        <button type="button" id="houseLockSetBtn" class="link-btn">הוספת קוד</button>
+        <button type="button" id="houseLockRemoveBtn" class="link-btn danger" hidden>הסרת קוד</button>
+      </div>
+      <form id="houseLockForm" class="house-lock-form" hidden>
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="houseLockInput" placeholder="••••" autocomplete="off" />
+        <button type="submit">שמירה</button>
+        <button type="button" id="houseLockCancel" class="link-btn">ביטול</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="lock-screen" id="lockScreen" hidden>
+  <div class="lock-card">
+    <div class="lock-icon">🔒</div>
+    <h2 id="lockHouseName">הרשימה</h2>
+    <p>הרשימה הזו מוגנת בקוד בן 4 ספרות</p>
+    <form id="lockForm">
+      <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="lockPinInput" placeholder="••••" autocomplete="off" autofocus />
+      <button type="submit">כניסה</button>
+    </form>
+    <div class="lock-error" id="lockError" hidden>קוד שגוי, נסו שוב</div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
 
   var BASE_TITLE = document.title || "רשימת הקניות של משפחת אידלמן";
+
+  // ---- multiple lists ("houses") ----
+  // Each list is identified by a slug carried in the URL (?house=...), so
+  // every list gets its own shareable link. Data lives at
+  // houses/<id>/items and houses/<id>/history in Firestore, so all lists
+  // share the one Firebase project. "default" is the plain link with no
+  // ?house= param, shown to people as "הרשימה הראשית".
+  var RECENT_HOUSES_KEY = "larder_recent_houses_v1";
+
+  function sanitizeHouseId(raw){
+    var s = (raw || "").trim().toLowerCase();
+    s = s.replace(/[^a-z0-9֐-׿]+/g, "-").replace(/^-+|-+$/g, "");
+    return s.slice(0, 40) || "default";
+  }
+  function houseDisplayName(id, fallbackLabel){
+    if (id === "default") return "הרשימה הראשית";
+    if (fallbackLabel) return fallbackLabel;
+    return id.replace(/-/g, " ");
+  }
+  function getHouseIdFromUrl(){
+    try{
+      var params = new URLSearchParams(location.search);
+      return sanitizeHouseId(params.get("house") || "default");
+    } catch(e){ return "default"; }
+  }
+  function setHouseInUrl(id){
+    try{
+      var url = new URL(location.href);
+      if (id === "default") url.searchParams.delete("house");
+      else url.searchParams.set("house", id);
+      history.pushState({}, "", url);
+    } catch(e){}
+  }
+  function loadRecentHouses(){
+    try{
+      var raw = localStorage.getItem(RECENT_HOUSES_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch(e){ return []; }
+  }
+  function saveRecentHouse(id, label){
+    try{
+      var list = loadRecentHouses().filter(function(h){ return h.id !== id; });
+      list.unshift({ id: id, label: label || houseDisplayName(id) });
+      localStorage.setItem(RECENT_HOUSES_KEY, JSON.stringify(list.slice(0, 8)));
+    } catch(e){}
+  }
+
+  var houseId = getHouseIdFromUrl();
+
+  // ---- PIN lock (per house) ----
+  // Not real security — the app is static and Firestore stays readable by
+  // anyone with the config, same as always. This only keeps the list from
+  // opening for someone who doesn't know the code (a casual visitor, a
+  // borrowed phone, a forwarded link) — a screen-lock, not a vault.
+  function simpleHash(str){
+    var h = 5381;
+    for (var i = 0; i < str.length; i++){ h = ((h * 33) ^ str.charCodeAt(i)) >>> 0; }
+    return h.toString(16);
+  }
+  function hashPin(pin, salt){
+    var payload = salt + ":" + pin;
+    if (window.crypto && window.crypto.subtle && location.protocol === "https:"){
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(payload)).then(function(buf){
+        return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2, "0"); }).join("");
+      }).catch(function(){ return "sh_" + simpleHash(payload); });
+    }
+    return Promise.resolve("sh_" + simpleHash(payload));
+  }
+  function metaDoc(){ return db.doc("houses/" + houseId + "/meta/settings"); }
+  function unlockKey(){ return "larder_unlock_" + houseId; }
 
   // Hebrew final-form letters (ך ם ן ף ץ) only look like that at the very
   // end of a word — once a suffix like ים/ות is added they turn back into
@@ -757,7 +1121,25 @@
     drawer: document.getElementById("drawer"),
     scrim: document.getElementById("scrim"),
     drawerClose: document.getElementById("drawerClose"),
-    drawerBody: document.getElementById("drawerBody")
+    drawerBody: document.getElementById("drawerBody"),
+    houseChip: document.getElementById("houseChip"),
+    houseChipLabel: document.getElementById("houseChipLabel"),
+    houseModal: document.getElementById("houseModal"),
+    houseModalClose: document.getElementById("houseModalClose"),
+    houseRecentList: document.getElementById("houseRecentList"),
+    houseForm: document.getElementById("houseForm"),
+    houseInput: document.getElementById("houseInput"),
+    houseLockStatus: document.getElementById("houseLockStatus"),
+    houseLockSetBtn: document.getElementById("houseLockSetBtn"),
+    houseLockRemoveBtn: document.getElementById("houseLockRemoveBtn"),
+    houseLockForm: document.getElementById("houseLockForm"),
+    houseLockInput: document.getElementById("houseLockInput"),
+    houseLockCancel: document.getElementById("houseLockCancel"),
+    lockScreen: document.getElementById("lockScreen"),
+    lockHouseName: document.getElementById("lockHouseName"),
+    lockForm: document.getElementById("lockForm"),
+    lockPinInput: document.getElementById("lockPinInput"),
+    lockError: document.getElementById("lockError")
   };
 
   CATEGORIES.forEach(function(c){
@@ -775,7 +1157,7 @@
 
   var db = null;
   var mode = "connecting"; // "sync" | "local"
-  var LOCAL_KEY = "larder_local_he_v1";
+  function localKey(){ return "larder_local_he_v1_" + houseId; }
 
   function nowIso(){ return new Date().toISOString(); }
   function uid(){ return "l" + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
@@ -787,6 +1169,11 @@
   }
 
   function catOf(key){ return CAT_BY_KEY[key] || CAT_BY_KEY.other; }
+
+  // Every list ("house") gets its own subtree in Firestore, so switching
+  // lists is just switching which path these point at.
+  function itemsCol(){ return db.collection("houses/" + houseId + "/items"); }
+  function historyCol(){ return db.collection("houses/" + houseId + "/history"); }
 
   // Used to tell whether two item names refer to "the same thing" — for
   // duplicate checking and for skipping items already on the list when
@@ -838,7 +1225,8 @@
     var checked = items.filter(function(i){ return i.checked; });
 
     try{
-      document.title = unchecked.length > 0 ? "(" + unchecked.length + ") " + BASE_TITLE : BASE_TITLE;
+      var titleBase = houseId === "default" ? BASE_TITLE : (houseDisplayName(houseId) + " · " + BASE_TITLE);
+      document.title = unchecked.length > 0 ? "(" + unchecked.length + ") " + titleBase : titleBase;
     } catch(e){}
 
     if (unchecked.length === 0 && checked.length === 0){
@@ -900,11 +1288,11 @@
   }
 
   function saveLocal(){
-    try{ localStorage.setItem(LOCAL_KEY, JSON.stringify({ items: items, history: history })); } catch(e){}
+    try{ localStorage.setItem(localKey(), JSON.stringify({ items: items, history: history })); } catch(e){}
   }
   function loadLocal(){
     try{
-      var raw = localStorage.getItem(LOCAL_KEY);
+      var raw = localStorage.getItem(localKey());
       if (raw){
         var parsed = JSON.parse(raw);
         items = parsed.items || [];
@@ -917,7 +1305,7 @@
     name = name.trim();
     if (!name) return;
     if (mode === "sync" && db){
-      db.collection("items").add({
+      itemsCol().add({
         name: name, category: category, checked: false,
         addedAt: nowIso(), checkedAt: null
       }).catch(function(){});
@@ -932,7 +1320,7 @@
     if (!item) return;
     var nextChecked = !item.checked;
     if (mode === "sync" && db){
-      db.collection("items").doc(id).update({ checked: nextChecked, checkedAt: nextChecked ? nowIso() : null }).catch(function(){});
+      itemsCol().doc(id).update({ checked: nextChecked, checkedAt: nextChecked ? nowIso() : null }).catch(function(){});
     } else {
       item.checked = nextChecked;
       item.checkedAt = nextChecked ? nowIso() : null;
@@ -942,7 +1330,7 @@
 
   function deleteItem(id){
     if (mode === "sync" && db){
-      db.collection("items").doc(id).delete().catch(function(){});
+      itemsCol().doc(id).delete().catch(function(){});
     } else {
       items = items.filter(function(i){ return i.id !== id; });
       saveLocal(); render();
@@ -958,9 +1346,9 @@
       count: checked.length
     };
     if (mode === "sync" && db){
-      db.collection("history").add(entry).catch(function(){});
+      historyCol().add(entry).catch(function(){});
       checked.forEach(function(i){
-        db.collection("items").doc(i.id).delete().catch(function(){});
+        itemsCol().doc(i.id).delete().catch(function(){});
       });
     } else {
       entry.id = uid();
@@ -1016,7 +1404,7 @@
     }
     if (mode === "sync" && db){
       toAdd.forEach(function(ri){
-        db.collection("items").add({
+        itemsCol().add({
           name: ri.name, category: ri.category || "other", checked: false,
           addedAt: nowIso(), checkedAt: null
         }).catch(function(){});
@@ -1121,11 +1509,15 @@
     render();
   }
 
-  function startSync(database){
-    mode = "sync";
-    db = database;
+  var unsubItems = null, unsubHistory = null;
+  function stopSubscriptions(){
+    if (unsubItems) { unsubItems(); unsubItems = null; }
+    if (unsubHistory) { unsubHistory(); unsubHistory = null; }
+  }
 
-    db.collection("items").orderBy("addedAt","asc").onSnapshot(function(snap){
+  function subscribeHouseData(){
+    stopSubscriptions();
+    unsubItems = itemsCol().orderBy("addedAt","asc").onSnapshot(function(snap){
       items = snap.docs.map(function(d){
         var data = d.data() || {};
         return {
@@ -1142,7 +1534,7 @@
       startLocal("איבדנו את החיבור לסנכרון — הרשימה נשמרת רק במכשיר הזה עד שהיא תחזור.");
     });
 
-    db.collection("history").orderBy("completedAt","desc").limit(20).onSnapshot(function(snap){
+    unsubHistory = historyCol().orderBy("completedAt","desc").limit(20).onSnapshot(function(snap){
       history = snap.docs.map(function(d){
         var data = d.data() || {};
         return { id: d.id, items: data.items || [], completedAt: data.completedAt || "", count: data.count };
@@ -1151,6 +1543,189 @@
     }, function(){});
   }
 
+  function startSync(database){
+    mode = "sync";
+    db = database;
+    els.syncBanner.hidden = true;
+    subscribeHouseData();
+    checkHouseLock();
+  }
+
+  // ---- lock screen ----
+  var currentPinHash = null;
+
+  function checkHouseLock(){
+    if (!db){ hideLockScreen(); updateLockSettingsUI(); return; }
+    metaDoc().get().then(function(snap){
+      var data = snap.exists ? snap.data() : null;
+      currentPinHash = (data && data.pinHash) ? data.pinHash : null;
+      updateLockSettingsUI();
+      if (!currentPinHash){ hideLockScreen(); return; }
+      var stored = null;
+      try{ stored = localStorage.getItem(unlockKey()); } catch(e){}
+      if (stored === currentPinHash) hideLockScreen();
+      else showLockScreen();
+    }).catch(function(){ hideLockScreen(); });
+  }
+
+  function showLockScreen(){
+    els.lockHouseName.textContent = houseDisplayName(houseId);
+    els.lockError.hidden = true;
+    els.lockPinInput.value = "";
+    els.lockScreen.hidden = false;
+    setTimeout(function(){ els.lockPinInput.focus(); }, 50);
+  }
+  function hideLockScreen(){ els.lockScreen.hidden = true; }
+
+  function showLockError(){
+    els.lockError.hidden = false;
+    els.lockPinInput.value = "";
+    els.lockPinInput.classList.remove("shake");
+    void els.lockPinInput.offsetWidth;
+    els.lockPinInput.classList.add("shake");
+    els.lockPinInput.focus();
+  }
+
+  els.lockForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var pin = els.lockPinInput.value.trim();
+    if (!/^\d{4}$/.test(pin)){ showLockError(); return; }
+    hashPin(pin, houseId).then(function(hash){
+      if (hash === currentPinHash){
+        try{ localStorage.setItem(unlockKey(), hash); } catch(e){}
+        hideLockScreen();
+      } else {
+        showLockError();
+      }
+    });
+  });
+
+  // ---- lock settings (inside the list switcher, for the CURRENT list) ----
+  function updateLockSettingsUI(){
+    if (!db){
+      els.houseLockStatus.textContent = "נעילה בקוד דורשת חיבור לסנכרון";
+      els.houseLockSetBtn.hidden = true;
+      els.houseLockRemoveBtn.hidden = true;
+      return;
+    }
+    if (currentPinHash){
+      els.houseLockStatus.textContent = "🔒 הרשימה מוגנת בקוד";
+      els.houseLockSetBtn.hidden = true;
+      els.houseLockRemoveBtn.hidden = false;
+    } else {
+      els.houseLockStatus.textContent = "🔓 אין קוד לרשימה הזו";
+      els.houseLockSetBtn.hidden = false;
+      els.houseLockRemoveBtn.hidden = true;
+    }
+  }
+
+  els.houseLockSetBtn.addEventListener("click", function(){
+    els.houseLockForm.hidden = false;
+    els.houseLockInput.value = "";
+    els.houseLockInput.focus();
+  });
+  els.houseLockCancel.addEventListener("click", function(){
+    els.houseLockForm.hidden = true;
+  });
+  els.houseLockForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var pin = els.houseLockInput.value.trim();
+    if (!/^\d{4}$/.test(pin)){
+      showToast("קוד חייב להיות 4 ספרות");
+      return;
+    }
+    if (!db){ showToast("נעילה בקוד דורשת חיבור לסנכרון"); return; }
+    hashPin(pin, houseId).then(function(hash){
+      return metaDoc().set({ pinHash: hash }).then(function(){ return hash; });
+    }).then(function(hash){
+      currentPinHash = hash;
+      try{ localStorage.setItem(unlockKey(), hash); } catch(e){}
+      els.houseLockForm.hidden = true;
+      els.houseLockInput.value = "";
+      updateLockSettingsUI();
+      showToast("הוגדר קוד לרשימה");
+    }).catch(function(){ showToast("שמירת הקוד נכשלה"); });
+  });
+  els.houseLockRemoveBtn.addEventListener("click", function(){
+    if (!window.confirm("להסיר את הקוד מרשימה זו?")) return;
+    metaDoc().set({ pinHash: null }).then(function(){
+      currentPinHash = null;
+      try{ localStorage.removeItem(unlockKey()); } catch(e){}
+      updateLockSettingsUI();
+      showToast("הוסר הקוד");
+    }).catch(function(){ showToast("הסרת הקוד נכשלה"); });
+  });
+
+  // ---- house chip + switcher modal ----
+  function renderHouseChip(){
+    els.houseChipLabel.textContent = houseDisplayName(houseId);
+  }
+
+  function renderHouseRecents(){
+    var recents = loadRecentHouses();
+    if (!recents.some(function(h){ return h.id === "default"; })){
+      recents.push({ id: "default", label: "הרשימה הראשית" });
+    }
+    if (!recents.some(function(h){ return h.id === houseId; })){
+      recents.unshift({ id: houseId, label: houseDisplayName(houseId) });
+    }
+    els.houseRecentList.innerHTML = recents.map(function(h){
+      return '<button type="button" class="house-pill' + (h.id === houseId ? " active" : "") + '" data-house="' + escapeHtml(h.id) + '" data-label="' + escapeHtml(h.label) + '">🏠 ' + escapeHtml(h.label) + '</button>';
+    }).join("");
+    els.houseRecentList.querySelectorAll(".house-pill").forEach(function(btn){
+      btn.onclick = function(){ switchHouse(btn.dataset.house, btn.dataset.label); };
+    });
+  }
+
+  function openHouseModal(){
+    renderHouseRecents();
+    els.houseInput.value = "";
+    els.houseLockForm.hidden = true;
+    updateLockSettingsUI();
+    els.houseModal.classList.add("show");
+    els.houseModal.setAttribute("aria-hidden","false");
+  }
+  function closeHouseModal(){
+    els.houseModal.classList.remove("show");
+    els.houseModal.setAttribute("aria-hidden","true");
+  }
+
+  function switchHouse(newId, label){
+    var id = sanitizeHouseId(newId);
+    if (!id || id === houseId){ closeHouseModal(); return; }
+    houseId = id;
+    setHouseInUrl(id);
+    saveRecentHouse(id, label);
+    renderHouseChip();
+    items = [];
+    history = [];
+    gotitOpen = false;
+    render();
+    currentPinHash = null;
+    if (mode === "sync" && db){
+      subscribeHouseData();
+      checkHouseLock();
+    } else {
+      startLocal();
+      updateLockSettingsUI();
+    }
+    closeHouseModal();
+    closeDrawer();
+    showToast('עברתם לרשימה "' + houseDisplayName(id, label) + '"');
+  }
+
+  els.houseChip.addEventListener("click", openHouseModal);
+  els.houseModalClose.addEventListener("click", closeHouseModal);
+  els.houseModal.addEventListener("click", function(e){ if (e.target === els.houseModal) closeHouseModal(); });
+  els.houseForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var val = els.houseInput.value.trim();
+    if (!val) return;
+    switchHouse(val, val);
+  });
+
+  renderHouseChip();
+  if (houseId !== "default") saveRecentHouse(houseId, houseDisplayName(houseId));
   render();
 
   var configured = FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf("YOUR_") !== 0;
