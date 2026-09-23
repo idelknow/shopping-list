@@ -6,15 +6,15 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>רשימת הקניות של משפחת אידלמן</title>
+<title>רשימת קניות משותפת</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Heebo:wght@400;500;600;700&display=swap">
 
 <!--
   ============================================================
   SETUP — read this before opening the file in a browser
   ============================================================
-  This page needs a free Firebase project to share the list between
-  everyone who opens the link (no login required for your family).
+  This page needs a free Firebase project to share lists between everyone
+  who opens a link to them (no login required for anyone).
 
   1. Go to https://console.firebase.google.com → "Add project" →
      give it any name → you can skip Google Analytics.
@@ -31,9 +31,9 @@
          }
        }
 
-     then "Publish". (This makes the list open to anyone who has
-     your Firebase config below — fine for a family list nobody else
-     will stumble onto, but don't put anything sensitive in it.)
+     then "Publish". (This makes every list open to anyone who has
+     your Firebase config below — fine as long as links aren't posted
+     publicly, but don't put anything sensitive in a list.)
   4. Back in Project Overview, click the "</>" (web) icon to register
      a web app → give it any nickname → you do NOT need Firebase
      Hosting for this step. It will show you a firebaseConfig object.
@@ -151,6 +151,89 @@
     justify-content:center;
   }
   .hero-art{ width:100%; max-width:230px; height:auto; display:block; }
+
+  .home-wrap{
+    max-width:520px;
+    margin:0 auto;
+    padding:18px 16px 48px;
+  }
+  .home-title{
+    font-family:'Rubik',sans-serif;
+    font-weight:800;
+    font-size:clamp(1.6rem, 7vw, 2.3rem);
+    letter-spacing:-0.01em;
+    text-align:center;
+    margin:8px 0 12px;
+    text-wrap:balance;
+  }
+  .home-sub{
+    text-align:center;
+    color:var(--ink-muted);
+    font-size:1.02rem;
+    line-height:1.65;
+    max-width:38ch;
+    margin:0 auto 28px;
+  }
+  .home-create-form{ margin-bottom:10px; }
+  .home-recent-hint{
+    font-size:.82rem;
+    color:var(--ink-muted);
+    margin:14px 0 8px;
+  }
+  #homeRecentWrap{ margin-bottom:10px; }
+  .home-how{
+    margin-top:38px;
+    padding-top:26px;
+    border-top:1px solid var(--line);
+  }
+  .home-how h2{
+    font-family:'Rubik',sans-serif;
+    font-weight:800;
+    font-size:1.3rem;
+    text-align:center;
+    margin:0 0 20px;
+  }
+  .how-steps{
+    display:flex;
+    flex-direction:column;
+  }
+  .how-step{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:12px 4px;
+    position:relative;
+  }
+  .how-step:not(:last-child)::after{
+    content:"";
+    position:absolute;
+    right:23px;
+    top:calc(100% - 4px);
+    height:16px;
+    width:2px;
+    background:var(--line);
+  }
+  .how-num{
+    flex:none;
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Rubik',sans-serif;
+    font-weight:800;
+    font-size:1.15rem;
+    color:var(--accent-ink);
+    background:linear-gradient(135deg, var(--accent), var(--citrus));
+    box-shadow:0 5px 12px -4px rgba(47,158,69,.45);
+  }
+  .how-text{
+    font-family:'Rubik',sans-serif;
+    font-weight:700;
+    font-size:1.05rem;
+    color:var(--ink);
+  }
 
   .house-bar{ display:flex; justify-content:center; margin-bottom:10px; }
   .house-chip{
@@ -825,15 +908,65 @@
     40%,60%{ transform:translateX(4px); }
   }
   .shake{ animation:shake .4s; }
-  /* A locked space gates everything inside it, including any individually
-     locked list, so its screen always wins if both ever show at once. */
-  #spaceLockScreen{ z-index:51; }
 </style>
 </head>
 <body>
 
 <div class="bar"></div>
-<div class="wrap">
+
+<div id="homePage" hidden>
+  <div class="home-wrap">
+    <div class="hero">
+      <svg class="hero-art" viewBox="0 0 260 96" aria-hidden="true">
+        <path d="M92 56Q130 14 168 56" stroke="#C9975B" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <path d="M52 58H208L190 90Q189 94 185 94H75Q71 94 70 90Z" fill="#C9975B"/>
+        <path d="M99 62V86M130 62V88M161 62V86" stroke="#A97C46" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
+        <circle cx="98" cy="46" r="17" fill="#DD5C4D"/>
+        <ellipse cx="92" cy="30" rx="6" ry="3" fill="#2F9E45" transform="rotate(-25 92 30)"/>
+        <ellipse cx="104" cy="30" rx="6" ry="3" fill="#2F9E45" transform="rotate(25 104 30)"/>
+        <ellipse cx="142" cy="45" rx="14" ry="18" fill="#E8B23F" transform="rotate(-8 142 45)"/>
+        <circle cx="182" cy="42" r="16" fill="#2F9E45"/>
+        <circle cx="176" cy="37" r="2" fill="#248A3B"/>
+        <circle cx="188" cy="40" r="2" fill="#248A3B"/>
+        <circle cx="181" cy="48" r="2" fill="#248A3B"/>
+        <ellipse cx="215" cy="58" rx="9" ry="6" fill="#2F9E45" opacity=".8" transform="rotate(-18 215 58)"/>
+        <ellipse cx="46" cy="60" rx="9" ry="6" fill="#F0923E" opacity=".8" transform="rotate(18 46 60)"/>
+      </svg>
+    </div>
+    <h1 class="home-title">רשימת קניות משותפת</h1>
+    <p class="home-sub">אפליקציה פשוטה לרשימת קניות משותפת. צרו קבוצה, שתפו את הקישור עם מי שתרצו — וכולם יכולים להוסיף ולסמן פריטים יחד, בזמן אמת.</p>
+
+    <form id="homeCreateForm" class="house-form home-create-form">
+      <input type="text" id="homeCreateInput" placeholder="שם לקבוצה שלכם, למשל המשפחה או העבודה…" autocomplete="off" maxlength="40" />
+      <button type="submit">יצירת קבוצה</button>
+    </form>
+
+    <div id="homeRecentWrap" hidden>
+      <p class="home-recent-hint">קבוצות שכבר פתחתם מהמכשיר הזה:</p>
+      <div id="homeRecentList" class="house-recent"></div>
+    </div>
+
+    <div class="home-how">
+      <h2>איך זה עובד</h2>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="how-num">1</div>
+          <div class="how-text">יוצרים קבוצה</div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">2</div>
+          <div class="how-text">מעתיקים קישור</div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">3</div>
+          <div class="how-text">משתפים</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="appWrap">
   <header>
     <div class="hero">
       <svg class="hero-art" viewBox="0 0 260 96" aria-hidden="true">
@@ -860,7 +993,7 @@
       </button>
     </div>
     <div class="titles">
-      <h1 id="pageTitle">רשימת הקניות של משפחת אידלמן</h1>
+      <h1 id="pageTitle">רשימת קניות משותפת</h1>
       <button class="history-btn" id="historyBtn" type="button">
         <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.2" stroke="currentColor" stroke-width="1.4"/><path d="M10 6.3V10l2.6 1.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         היסטוריה
@@ -936,9 +1069,9 @@
     <div class="house-space" id="houseSpaceSection">
       <div id="houseSpaceCurrent" hidden>
         <div class="house-lock-row">
-          <span id="houseSpaceLabel">🔒 קבוצה פרטית</span>
+          <span id="houseSpaceLabel">👥 קבוצה</span>
           <button type="button" id="spaceCopyLinkBtn" class="link-btn">העתקת קישור לשיתוף</button>
-          <button type="button" id="spaceLeaveBtn" class="link-btn">חזרה לרשימת אידלמן</button>
+          <button type="button" id="spaceLeaveBtn" class="link-btn">חזרה לדף הבית</button>
         </div>
         <div class="house-lock-row">
           <button type="button" id="spaceEditNameBtn" class="link-btn">שינוי שם</button>
@@ -949,26 +1082,8 @@
           <button type="button" id="spaceEditNameCancel" class="link-btn">ביטול</button>
         </form>
 
-        <div class="house-lock">
-          <div class="house-lock-row">
-            <span id="spaceLockStatus">🔓 אין קוד לקבוצה</span>
-            <button type="button" id="spaceLockSetBtn" class="link-btn">הוספת קוד</button>
-            <button type="button" id="spaceLockRemoveBtn" class="link-btn danger" hidden>הסרת קוד</button>
-          </div>
-          <form id="spaceLockForm" class="house-lock-form" hidden>
-            <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="spaceLockInput" placeholder="••••" autocomplete="off" />
-            <button type="submit">שמירה</button>
-            <button type="button" id="spaceLockCancel" class="link-btn">ביטול</button>
-          </form>
-        </div>
-
         <div class="house-danger" id="spaceDangerSection">
           <button type="button" id="spaceDeleteBtn" class="link-btn danger">מחיקת הקבוצה כולה</button>
-          <form id="spaceDeleteForm" class="house-lock-form danger" hidden>
-            <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="spaceDeleteInput" placeholder="קוד" autocomplete="off" />
-            <button type="submit">מחיקה</button>
-            <button type="button" id="spaceDeleteCancel" class="link-btn">ביטול</button>
-          </form>
         </div>
       </div>
       <div id="houseSpaceStart" hidden>
@@ -987,24 +1102,11 @@
   </div>
 </div>
 
-<div class="lock-screen" id="spaceLockScreen" hidden>
-  <div class="lock-card">
-    <div class="lock-icon">🔒</div>
-    <h2 id="spaceLockGroupName">קבוצה פרטית</h2>
-    <p>הקבוצה הזו מוגנת בקוד בן 4 ספרות</p>
-    <form id="spaceLockGateForm">
-      <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="spaceLockGateInput" placeholder="••••" autocomplete="off" autofocus />
-      <button type="submit">כניסה</button>
-    </form>
-    <div class="lock-error" id="spaceLockGateError" hidden>קוד שגוי, נסו שוב</div>
-  </div>
-</div>
-
 <script>
 (function(){
   "use strict";
 
-  var BASE_TITLE = document.title || "רשימת הקניות של משפחת אידלמן";
+  var BASE_TITLE = document.title || "רשימת קניות משותפת";
 
   // ---- private spaces ----
   // A "space" is a whole separate universe of lists, for someone who isn't
@@ -1067,17 +1169,24 @@
   // or written the moment the group is created / renamed). Until then the
   // name shown is just guessed from the id.
   var currentSpaceLabel = null;
-  // The group's own entry PIN — separate from any individual list's PIN
-  // inside it. Not real security, same as the list PIN: it just keeps the
-  // group from opening for someone who doesn't have the code.
-  var currentSpacePinHash = null;
   function spaceMetaDoc(){ return db.doc("spaces/" + spaceId + "/meta/settings"); }
   function currentSpaceName(){ return currentSpaceLabel || spaceDisplayName(spaceId); }
-  function spaceUnlockKey(){ return "larder_space_unlock_" + spaceId; }
 
-  // A group using its own private space sees its own name everywhere the
-  // page said "משפחת אידלמן" (page title, browser tab) — the family's
-  // wording stays exactly as before when there's no ?space= at all.
+  // The plain link (no ?space= and no ?house= at all) is the app's general
+  // home/explainer page, not any particular list — a specific list always
+  // needs an explicit link (a group's, or the original ?house=... links
+  // this app already had). Checked via the raw query string, since
+  // getHouseIdFromUrl() always fills in "default" once no param is given
+  // and can't tell "no ?house= at all" apart from "?house=default".
+  var houseParamPresent = (function(){
+    try{ return new URLSearchParams(location.search).has("house"); }
+    catch(e){ return false; }
+  })();
+  var showHomePage = !spaceId && !houseParamPresent;
+
+  // A group sees its own name everywhere the page otherwise shows the
+  // generic app name (page title, browser tab) — unchanged when there's
+  // no ?space= at all (a direct list link, or the home page).
   if (spaceId){
     BASE_TITLE = currentSpaceName() ? ("רשימת הקניות של " + currentSpaceName()) : "רשימת קניות משותפת";
     try{
@@ -1317,27 +1426,19 @@
     spaceEditNameInput: document.getElementById("spaceEditNameInput"),
     spaceEditNameCancel: document.getElementById("spaceEditNameCancel"),
     spaceDeleteBtn: document.getElementById("spaceDeleteBtn"),
-    spaceDeleteForm: document.getElementById("spaceDeleteForm"),
-    spaceDeleteInput: document.getElementById("spaceDeleteInput"),
-    spaceDeleteCancel: document.getElementById("spaceDeleteCancel"),
-    spaceLockStatus: document.getElementById("spaceLockStatus"),
-    spaceLockSetBtn: document.getElementById("spaceLockSetBtn"),
-    spaceLockRemoveBtn: document.getElementById("spaceLockRemoveBtn"),
-    spaceLockForm: document.getElementById("spaceLockForm"),
-    spaceLockInput: document.getElementById("spaceLockInput"),
-    spaceLockCancel: document.getElementById("spaceLockCancel"),
-    spaceLockScreen: document.getElementById("spaceLockScreen"),
-    spaceLockGroupName: document.getElementById("spaceLockGroupName"),
-    spaceLockGateForm: document.getElementById("spaceLockGateForm"),
-    spaceLockGateInput: document.getElementById("spaceLockGateInput"),
-    spaceLockGateError: document.getElementById("spaceLockGateError"),
     spaceLeaveBtn: document.getElementById("spaceLeaveBtn"),
     houseSpaceStart: document.getElementById("houseSpaceStart"),
     spaceStartBtn: document.getElementById("spaceStartBtn"),
     spaceStartForm: document.getElementById("spaceStartForm"),
     spaceStartInput: document.getElementById("spaceStartInput"),
     spaceRecentWrap: document.getElementById("spaceRecentWrap"),
-    spaceRecentList: document.getElementById("spaceRecentList")
+    spaceRecentList: document.getElementById("spaceRecentList"),
+    appWrap: document.getElementById("appWrap"),
+    homePage: document.getElementById("homePage"),
+    homeCreateForm: document.getElementById("homeCreateForm"),
+    homeCreateInput: document.getElementById("homeCreateInput"),
+    homeRecentWrap: document.getElementById("homeRecentWrap"),
+    homeRecentList: document.getElementById("homeRecentList")
   };
 
   CATEGORIES.forEach(function(c){
@@ -1781,7 +1882,7 @@
     if (spaceId) loadSpaceMeta();
   }
 
-  // ---- list deletion (no PIN of its own — see the group's PIN instead) ----
+  // ---- list deletion ----
   // Deleting the main list would strand everyone, so it's the one list
   // this option never applies to. Also hidden while offline, since there's
   // nothing to actually delete from without a synced database.
@@ -1847,10 +1948,7 @@
       els.houseSpaceCurrent.hidden = false;
       els.houseSpaceStart.hidden = true;
       els.spaceEditNameForm.hidden = true;
-      els.spaceLockForm.hidden = true;
-      els.spaceDeleteForm.hidden = true;
-      els.houseSpaceLabel.textContent = "🔒 קבוצה: " + currentSpaceName();
-      updateSpaceLockSettingsUI();
+      els.houseSpaceLabel.textContent = "👥 קבוצה: " + currentSpaceName();
     } else {
       els.houseSpaceCurrent.hidden = true;
       els.houseSpaceStart.hidden = false;
@@ -1860,7 +1958,7 @@
       if (recents.length){
         els.spaceRecentWrap.hidden = false;
         els.spaceRecentList.innerHTML = recents.map(function(s){
-          return '<button type="button" class="house-pill" data-space="' + escapeHtml(s.id) + '">🔒 ' + escapeHtml(s.label) + '</button>';
+          return '<button type="button" class="house-pill" data-space="' + escapeHtml(s.id) + '">👥 ' + escapeHtml(s.label) + '</button>';
         }).join("");
         els.spaceRecentList.querySelectorAll(".house-pill").forEach(function(btn){
           btn.onclick = function(){ goToSpace(btn.dataset.space); };
@@ -1878,120 +1976,22 @@
     if (!spaceId) return;
     BASE_TITLE = currentSpaceName() ? ("רשימת הקניות של " + currentSpaceName()) : "רשימת קניות משותפת";
     if (els.pageTitle) els.pageTitle.textContent = BASE_TITLE;
-    els.houseSpaceLabel.textContent = "🔒 קבוצה: " + currentSpaceName();
+    els.houseSpaceLabel.textContent = "👥 קבוצה: " + currentSpaceName();
     render();
   }
 
-  // Loads the group's own name and entry PIN (if any) once synced, and
-  // shows the group's lock screen when it's protected and this device
-  // hasn't unlocked it yet. Until this resolves, the name shown anywhere
-  // is just guessed from the link.
+  // Loads the group's own chosen name once synced. Until this resolves,
+  // the name shown anywhere is just guessed from the link.
   function loadSpaceMeta(){
-    if (!db || !spaceId){ updateSpaceLockSettingsUI(); return; }
+    if (!db || !spaceId) return;
     spaceMetaDoc().get().then(function(snap){
       var data = snap.exists ? snap.data() : null;
       if (data && data.label){
         currentSpaceLabel = data.label;
         refreshSpaceBranding();
       }
-      currentSpacePinHash = (data && data.pinHash) ? data.pinHash : null;
-      updateSpaceLockSettingsUI();
-      if (!currentSpacePinHash){ hideSpaceLockScreen(); return; }
-      var stored = null;
-      try{ stored = localStorage.getItem(spaceUnlockKey()); } catch(e){}
-      if (stored === currentSpacePinHash) hideSpaceLockScreen();
-      else showSpaceLockScreen();
-    }).catch(function(){ hideSpaceLockScreen(); });
+    }).catch(function(){});
   }
-
-  function showSpaceLockScreen(){
-    els.spaceLockGroupName.textContent = currentSpaceName();
-    els.spaceLockGateError.hidden = true;
-    els.spaceLockGateInput.value = "";
-    els.spaceLockScreen.hidden = false;
-    setTimeout(function(){ els.spaceLockGateInput.focus(); }, 50);
-  }
-  function hideSpaceLockScreen(){ els.spaceLockScreen.hidden = true; }
-
-  function showSpaceLockGateError(){
-    els.spaceLockGateError.hidden = false;
-    els.spaceLockGateInput.value = "";
-    els.spaceLockGateInput.classList.remove("shake");
-    void els.spaceLockGateInput.offsetWidth;
-    els.spaceLockGateInput.classList.add("shake");
-    els.spaceLockGateInput.focus();
-  }
-
-  els.spaceLockGateForm.addEventListener("submit", function(e){
-    e.preventDefault();
-    var pin = els.spaceLockGateInput.value.trim();
-    if (!/^\d{4}$/.test(pin)){ showSpaceLockGateError(); return; }
-    hashPin(pin, "space_" + spaceId).then(function(hash){
-      if (hash === currentSpacePinHash){
-        try{ localStorage.setItem(spaceUnlockKey(), hash); } catch(e){}
-        hideSpaceLockScreen();
-      } else {
-        showSpaceLockGateError();
-      }
-    });
-  });
-
-  // ---- space lock settings (inside the list switcher) ----
-  function updateSpaceLockSettingsUI(){
-    if (!spaceId) return;
-    if (!db){
-      els.spaceLockStatus.textContent = "נעילה בקוד דורשת חיבור לסנכרון";
-      els.spaceLockSetBtn.hidden = true;
-      els.spaceLockRemoveBtn.hidden = true;
-      return;
-    }
-    if (currentSpacePinHash){
-      els.spaceLockStatus.textContent = "🔒 הקבוצה מוגנת בקוד";
-      els.spaceLockSetBtn.hidden = true;
-      els.spaceLockRemoveBtn.hidden = false;
-    } else {
-      els.spaceLockStatus.textContent = "🔓 אין קוד לקבוצה";
-      els.spaceLockSetBtn.hidden = false;
-      els.spaceLockRemoveBtn.hidden = true;
-    }
-  }
-
-  els.spaceLockSetBtn.addEventListener("click", function(){
-    els.spaceLockForm.hidden = false;
-    els.spaceLockInput.value = "";
-    els.spaceLockInput.focus();
-  });
-  els.spaceLockCancel.addEventListener("click", function(){
-    els.spaceLockForm.hidden = true;
-  });
-  els.spaceLockForm.addEventListener("submit", function(e){
-    e.preventDefault();
-    var pin = els.spaceLockInput.value.trim();
-    if (!/^\d{4}$/.test(pin)){
-      showToast("קוד חייב להיות 4 ספרות");
-      return;
-    }
-    if (!db){ showToast("נעילה בקוד דורשת חיבור לסנכרון"); return; }
-    hashPin(pin, "space_" + spaceId).then(function(hash){
-      return spaceMetaDoc().set({ pinHash: hash }, { merge: true }).then(function(){ return hash; });
-    }).then(function(hash){
-      currentSpacePinHash = hash;
-      try{ localStorage.setItem(spaceUnlockKey(), hash); } catch(e){}
-      els.spaceLockForm.hidden = true;
-      els.spaceLockInput.value = "";
-      updateSpaceLockSettingsUI();
-      showToast("הוגדר קוד לקבוצה");
-    }).catch(function(){ showToast("שמירת הקוד נכשלה"); });
-  });
-  els.spaceLockRemoveBtn.addEventListener("click", function(){
-    if (!window.confirm("להסיר את הקוד מהקבוצה?")) return;
-    spaceMetaDoc().set({ pinHash: null }, { merge: true }).then(function(){
-      currentSpacePinHash = null;
-      try{ localStorage.removeItem(spaceUnlockKey()); } catch(e){}
-      updateSpaceLockSettingsUI();
-      showToast("הוסר הקוד");
-    }).catch(function(){ showToast("הסרת הקוד נכשלה"); });
-  });
 
   // Deletes every list, its history and its lock code across the whole
   // group — everyone who has this group's link loses access to all of it.
@@ -2019,6 +2019,38 @@
     });
   }
 
+  // Creates a brand-new group and navigates to it — shared by the "start a
+  // group" button inside an existing list's switcher and the create-group
+  // form on the home page, so both behave identically.
+  function createSpaceAndGo(name){
+    var base = sanitizeSpaceId(name) || "group";
+    var id = base + "-" + randomCode();
+    saveRecentSpace(id, name);
+    var cleanUrl = (function(){
+      var url = new URL(location.href);
+      url.searchParams.set("space", id);
+      url.searchParams.delete("house");
+      return url.toString();
+    })();
+    function proceed(){
+      var copyPromise = (navigator.clipboard && navigator.clipboard.writeText)
+        ? navigator.clipboard.writeText(cleanUrl).catch(function(){})
+        : Promise.resolve();
+      copyPromise.then(function(){
+        var target = new URL(cleanUrl);
+        target.searchParams.set("welcome", "1");
+        location.href = target.toString();
+      });
+    }
+    if (db){
+      db.doc("spaces/" + id + "/meta/settings").set({ label: name, updatedAt: nowIso() }, { merge: true })
+        .catch(function(){})
+        .then(proceed);
+    } else {
+      proceed();
+    }
+  }
+
   els.spaceStartBtn.addEventListener("click", function(){
     els.spaceStartForm.hidden = false;
     els.spaceStartInput.value = "";
@@ -2028,16 +2060,13 @@
     e.preventDefault();
     var name = els.spaceStartInput.value.trim();
     if (!name) return;
-    var base = sanitizeSpaceId(name) || "group";
-    var id = base + "-" + randomCode();
-    saveRecentSpace(id, name);
-    if (db){
-      db.doc("spaces/" + id + "/meta/settings").set({ label: name, updatedAt: nowIso() }, { merge: true })
-        .catch(function(){})
-        .then(function(){ goToSpace(id); });
-    } else {
-      goToSpace(id);
-    }
+    createSpaceAndGo(name);
+  });
+  els.homeCreateForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = els.homeCreateInput.value.trim();
+    if (!name) return;
+    createSpaceAndGo(name);
   });
   els.spaceCopyLinkBtn.addEventListener("click", function(){
     var link = location.href;
@@ -2065,7 +2094,7 @@
       currentSpaceLabel = name;
       saveRecentSpace(spaceId, name);
       refreshSpaceBranding();
-      els.houseSpaceLabel.textContent = "🔒 קבוצה: " + name;
+      els.houseSpaceLabel.textContent = "👥 קבוצה: " + name;
       els.spaceEditNameForm.hidden = true;
       showToast("שם הקבוצה עודכן");
     }).catch(function(){ showToast("שמירת השם נכשלה"); });
@@ -2075,40 +2104,13 @@
       var list = loadRecentSpaces().filter(function(s){ return s.id !== spaceId; });
       localStorage.setItem(RECENT_SPACES_KEY, JSON.stringify(list));
     } catch(e){}
-    try{ localStorage.removeItem(spaceUnlockKey()); } catch(e){}
     goToSpace("");
   }
 
-  // A protected group can only be deleted by someone who can type its
-  // code — same rule as deleting one list inside it. A group with no code
-  // just gets a plain confirm, same as an unprotected list.
   els.spaceDeleteBtn.addEventListener("click", function(){
     if (!db) return;
-    if (currentSpacePinHash){
-      els.spaceDeleteForm.hidden = false;
-      els.spaceDeleteInput.value = "";
-      els.spaceDeleteInput.focus();
-    } else {
-      if (!window.confirm('למחוק את הקבוצה "' + currentSpaceName() + '" לצמיתות? לא ניתן לבטל את זה.')) return;
-      deleteSpaceEverywhere().then(finishDeleteSpace).catch(function(){ showToast("המחיקה נכשלה"); });
-    }
-  });
-  els.spaceDeleteCancel.addEventListener("click", function(){
-    els.spaceDeleteForm.hidden = true;
-  });
-  els.spaceDeleteForm.addEventListener("submit", function(e){
-    e.preventDefault();
-    var pin = els.spaceDeleteInput.value.trim();
-    if (!/^\d{4}$/.test(pin)) return;
-    hashPin(pin, "space_" + spaceId).then(function(hash){
-      if (hash !== currentSpacePinHash){
-        showToast("קוד שגוי");
-        els.spaceDeleteInput.value = "";
-        return;
-      }
-      els.spaceDeleteForm.hidden = true;
-      deleteSpaceEverywhere().then(finishDeleteSpace).catch(function(){ showToast("המחיקה נכשלה"); });
-    });
+    if (!window.confirm('למחוק את הקבוצה "' + currentSpaceName() + '" לצמיתות? לא ניתן לבטל את זה.')) return;
+    deleteSpaceEverywhere().then(finishDeleteSpace).catch(function(){ showToast("המחיקה נכשלה"); });
   });
   els.spaceLeaveBtn.addEventListener("click", function(){
     goToSpace("");
@@ -2163,18 +2165,67 @@
 
   renderHouseChip();
   if (houseId !== "default") saveRecentHouse(houseId, houseDisplayName(houseId));
-  render();
+
+  // ---- home page (the bare link, with no group and no list of its own) ----
+  function renderHomeRecents(){
+    var recents = loadRecentSpaces();
+    if (recents.length){
+      els.homeRecentWrap.hidden = false;
+      els.homeRecentList.innerHTML = recents.map(function(s){
+        return '<button type="button" class="house-pill" data-space="' + escapeHtml(s.id) + '">👥 ' + escapeHtml(s.label) + '</button>';
+      }).join("");
+      els.homeRecentList.querySelectorAll(".house-pill").forEach(function(btn){
+        btn.onclick = function(){ goToSpace(btn.dataset.space); };
+      });
+    } else {
+      els.homeRecentWrap.hidden = true;
+    }
+  }
 
   var configured = FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf("YOUR_") !== 0;
-  if (configured && window.firebase){
-    try{
-      firebase.initializeApp(FIREBASE_CONFIG);
-      startSync(firebase.firestore());
-    } catch(e){
-      startLocal("החיבור לסנכרון נכשל — הרשימה נשמרת רק במכשיר הזה.");
+
+  if (showHomePage){
+    els.appWrap.hidden = true;
+    els.homePage.hidden = false;
+    document.title = BASE_TITLE;
+    renderHomeRecents();
+    // Firebase is still initialized (silently, no list to sync) so the
+    // create-group form can write the new group's name before navigating.
+    if (configured && window.firebase){
+      try{
+        firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.firestore();
+        mode = "sync";
+      } catch(e){}
     }
   } else {
-    startLocal("הקובץ עדיין לא מחובר לפיירבייס — ראו את הוראות ההגדרה בראש הקובץ. הרשימה נשמרת כרגע רק במכשיר הזה.");
+    render();
+    if (configured && window.firebase){
+      try{
+        firebase.initializeApp(FIREBASE_CONFIG);
+        startSync(firebase.firestore());
+      } catch(e){
+        startLocal("החיבור לסנכרון נכשל — הרשימה נשמרת רק במכשיר הזה.");
+      }
+    } else {
+      startLocal("הקובץ עדיין לא מחובר לפיירבייס — ראו את הוראות ההגדרה בראש הקובץ. הרשימה נשמרת כרגע רק במכשיר הזה.");
+    }
+  }
+
+  // A brand-new group only exists at its own link — there's no account to
+  // sign into on another device, so the first visit (right after creating
+  // it) copies that link and nudges the person to save/send it themselves,
+  // otherwise they'd have no way back in from a different phone/computer.
+  if (spaceId){
+    try{
+      var welcomeParams = new URLSearchParams(location.search);
+      if (welcomeParams.get("welcome") === "1"){
+        welcomeParams.delete("welcome");
+        var cleanedUrl = location.pathname + (welcomeParams.toString() ? "?" + welcomeParams.toString() : "") + location.hash;
+        history.replaceState({}, "", cleanedUrl);
+        showToast("הקבוצה נוצרה! הקישור הועתק — שלחו אותו לעצמכם כדי לפתוח גם ממכשיר אחר");
+      }
+    } catch(e){}
   }
 })();
 </script>
