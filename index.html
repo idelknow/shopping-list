@@ -719,6 +719,39 @@
   }
   .house-space .house-modal-hint{ margin-bottom:8px; }
   .house-space .house-form{ margin-top:8px; }
+  .house-text-form{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:10px;
+  }
+  .house-text-form input[type="text"]{
+    flex:1 1 auto;
+    min-width:0;
+    border:1px solid var(--line);
+    background:var(--surface-2);
+    color:var(--ink);
+    font:inherit;
+    font-size:.88rem;
+    border-radius:10px;
+    padding:8px 10px;
+    outline:none;
+  }
+  .house-text-form input[type="text"]:focus{ border-color:var(--accent); }
+  .house-text-form button[type="submit"]{
+    appearance:none;
+    border:none;
+    background:var(--accent);
+    color:var(--accent-ink);
+    font:inherit;
+    font-size:.8rem;
+    font-weight:700;
+    padding:8px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    flex:none;
+  }
+  .house-text-form.danger button[type="submit"]{ background:var(--danger); }
 
   .lock-screen{
     position:fixed; inset:0;
@@ -919,7 +952,21 @@
         <div class="house-lock-row">
           <span id="houseSpaceLabel">🔒 קבוצה פרטית</span>
           <button type="button" id="spaceCopyLinkBtn" class="link-btn">העתקת קישור לשיתוף</button>
+          <button type="button" id="spaceEditNameBtn" class="link-btn">שינוי שם</button>
           <button type="button" id="spaceLeaveBtn" class="link-btn">חזרה לרשימת אידלמן</button>
+        </div>
+        <form id="spaceEditNameForm" class="house-text-form" hidden>
+          <input type="text" id="spaceEditNameInput" placeholder="שם הקבוצה" autocomplete="off" maxlength="40" />
+          <button type="submit">שמירה</button>
+          <button type="button" id="spaceEditNameCancel" class="link-btn">ביטול</button>
+        </form>
+        <div class="house-danger" id="spaceDangerSection">
+          <button type="button" id="spaceDeleteBtn" class="link-btn danger">מחיקת הקבוצה כולה</button>
+          <form id="spaceDeleteForm" class="house-text-form danger" hidden>
+            <input type="text" id="spaceDeleteInput" placeholder="הקלידו את שם הקבוצה לאישור" autocomplete="off" maxlength="40" />
+            <button type="submit">מחיקה</button>
+            <button type="button" id="spaceDeleteCancel" class="link-btn">ביטול</button>
+          </form>
         </div>
       </div>
       <div id="houseSpaceStart" hidden>
@@ -1014,18 +1061,23 @@
   // devices need no migration at all.
   function spacePrefix(){ return spaceId ? ("spaces/" + spaceId + "/") : ""; }
   function spaceKeySuffix(){ return spaceId ? ("_sp_" + spaceId) : ""; }
+  // Holds the group's own chosen name once it's set (loaded from Firestore,
+  // or written the moment the group is created / renamed). Until then the
+  // name shown is just guessed from the id.
+  var currentSpaceLabel = null;
+  function spaceMetaDoc(){ return db.doc("spaces/" + spaceId + "/meta/settings"); }
+  function currentSpaceName(){ return currentSpaceLabel || spaceDisplayName(spaceId); }
 
   // A group using its own private space sees its own name everywhere the
   // page said "משפחת אידלמן" (page title, browser tab) — the family's
   // wording stays exactly as before when there's no ?space= at all.
   if (spaceId){
-    var spaceLabel = spaceDisplayName(spaceId);
-    BASE_TITLE = spaceLabel ? ("רשימת הקניות של " + spaceLabel) : "רשימת קניות משותפת";
+    BASE_TITLE = currentSpaceName() ? ("רשימת הקניות של " + currentSpaceName()) : "רשימת קניות משותפת";
     try{
       var pageTitleEl = document.getElementById("pageTitle");
       if (pageTitleEl) pageTitleEl.textContent = BASE_TITLE;
     } catch(e){}
-    saveRecentSpace(spaceId, spaceLabel);
+    saveRecentSpace(spaceId, currentSpaceName());
   }
 
   // ---- multiple lists ("houses") ----
@@ -1262,6 +1314,14 @@
     houseSpaceCurrent: document.getElementById("houseSpaceCurrent"),
     houseSpaceLabel: document.getElementById("houseSpaceLabel"),
     spaceCopyLinkBtn: document.getElementById("spaceCopyLinkBtn"),
+    spaceEditNameBtn: document.getElementById("spaceEditNameBtn"),
+    spaceEditNameForm: document.getElementById("spaceEditNameForm"),
+    spaceEditNameInput: document.getElementById("spaceEditNameInput"),
+    spaceEditNameCancel: document.getElementById("spaceEditNameCancel"),
+    spaceDeleteBtn: document.getElementById("spaceDeleteBtn"),
+    spaceDeleteForm: document.getElementById("spaceDeleteForm"),
+    spaceDeleteInput: document.getElementById("spaceDeleteInput"),
+    spaceDeleteCancel: document.getElementById("spaceDeleteCancel"),
     spaceLeaveBtn: document.getElementById("spaceLeaveBtn"),
     houseSpaceStart: document.getElementById("houseSpaceStart"),
     spaceStartBtn: document.getElementById("spaceStartBtn"),
@@ -1714,6 +1774,7 @@
     subscribeHouseIndex();
     checkHouseLock();
     if (houseId !== "default") registerHouse(houseId);
+    if (spaceId) checkSpaceLabel();
   }
 
   // ---- lock screen ----
@@ -1913,7 +1974,9 @@
     if (spaceId){
       els.houseSpaceCurrent.hidden = false;
       els.houseSpaceStart.hidden = true;
-      els.houseSpaceLabel.textContent = "🔒 קבוצה: " + spaceDisplayName(spaceId);
+      els.spaceEditNameForm.hidden = true;
+      els.spaceDeleteForm.hidden = true;
+      els.houseSpaceLabel.textContent = "🔒 קבוצה: " + currentSpaceName();
     } else {
       els.houseSpaceCurrent.hidden = true;
       els.houseSpaceStart.hidden = false;
@@ -1934,6 +1997,56 @@
     }
   }
 
+  // Re-applies the group's current name to the tab title, page heading and
+  // switcher label — called after loading the stored name from Firestore
+  // and again right after a rename, so every place it shows stays in sync.
+  function refreshSpaceBranding(){
+    if (!spaceId) return;
+    BASE_TITLE = currentSpaceName() ? ("רשימת הקניות של " + currentSpaceName()) : "רשימת קניות משותפת";
+    if (els.pageTitle) els.pageTitle.textContent = BASE_TITLE;
+    els.houseSpaceLabel.textContent = "🔒 קבוצה: " + currentSpaceName();
+    render();
+  }
+
+  // Loads the group's own chosen name (if one was ever set) once synced —
+  // until this resolves, the name shown is just guessed from the link.
+  function checkSpaceLabel(){
+    if (!db || !spaceId) return;
+    spaceMetaDoc().get().then(function(snap){
+      var data = snap.exists ? snap.data() : null;
+      if (data && data.label){
+        currentSpaceLabel = data.label;
+        refreshSpaceBranding();
+      }
+    }).catch(function(){});
+  }
+
+  // Deletes every list, its history and its lock code across the whole
+  // group — everyone who has this group's link loses access to all of it.
+  // Looks up the group's own house directory fresh (rather than trusting
+  // whatever happens to be cached) so nothing is left behind.
+  function deleteSpaceEverywhere(){
+    return housesIndexCol().get().then(function(snap){
+      var ids = snap.docs.map(function(d){ return d.id; });
+      ids.push("default");
+      var deletions = ids.map(function(id){
+        var itemsRef = db.collection(spacePrefix() + "houses/" + id + "/items");
+        var historyRef = db.collection(spacePrefix() + "houses/" + id + "/history");
+        return Promise.all([itemsRef.get(), historyRef.get()]).then(function(results){
+          var batch = db.batch();
+          results[0].docs.forEach(function(d){ batch.delete(d.ref); });
+          results[1].docs.forEach(function(d){ batch.delete(d.ref); });
+          batch.delete(db.doc(spacePrefix() + "houses/" + id + "/meta/settings"));
+          if (id !== "default") batch.delete(db.doc(spacePrefix() + "houses_index/" + id));
+          return batch.commit();
+        });
+      });
+      return Promise.all(deletions);
+    }).then(function(){
+      return db.doc("spaces/" + spaceId + "/meta/settings").delete().catch(function(){});
+    });
+  }
+
   els.spaceStartBtn.addEventListener("click", function(){
     els.spaceStartForm.hidden = false;
     els.spaceStartInput.value = "";
@@ -1946,7 +2059,13 @@
     var base = sanitizeSpaceId(name) || "group";
     var id = base + "-" + randomCode();
     saveRecentSpace(id, name);
-    goToSpace(id);
+    if (db){
+      db.doc("spaces/" + id + "/meta/settings").set({ label: name, updatedAt: nowIso() }, { merge: true })
+        .catch(function(){})
+        .then(function(){ goToSpace(id); });
+    } else {
+      goToSpace(id);
+    }
   });
   els.spaceCopyLinkBtn.addEventListener("click", function(){
     var link = location.href;
@@ -1955,6 +2074,56 @@
     } else {
       showToast(link);
     }
+  });
+  els.spaceEditNameBtn.addEventListener("click", function(){
+    els.spaceEditNameForm.hidden = false;
+    els.spaceEditNameInput.value = currentSpaceName();
+    els.spaceEditNameInput.focus();
+    els.spaceEditNameInput.select();
+  });
+  els.spaceEditNameCancel.addEventListener("click", function(){
+    els.spaceEditNameForm.hidden = true;
+  });
+  els.spaceEditNameForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = els.spaceEditNameInput.value.trim();
+    if (!name) return;
+    if (!db){ showToast("שינוי שם דורש חיבור לסנכרון"); return; }
+    spaceMetaDoc().set({ label: name, updatedAt: nowIso() }, { merge: true }).then(function(){
+      currentSpaceLabel = name;
+      saveRecentSpace(spaceId, name);
+      refreshSpaceBranding();
+      els.houseSpaceLabel.textContent = "🔒 קבוצה: " + name;
+      els.spaceEditNameForm.hidden = true;
+      showToast("שם הקבוצה עודכן");
+    }).catch(function(){ showToast("שמירת השם נכשלה"); });
+  });
+  els.spaceDeleteBtn.addEventListener("click", function(){
+    els.spaceDeleteForm.hidden = false;
+    els.spaceDeleteInput.value = "";
+    els.spaceDeleteInput.placeholder = 'הקלידו "' + currentSpaceName() + '" לאישור';
+    els.spaceDeleteInput.focus();
+  });
+  els.spaceDeleteCancel.addEventListener("click", function(){
+    els.spaceDeleteForm.hidden = true;
+  });
+  els.spaceDeleteForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var typed = els.spaceDeleteInput.value.trim();
+    var expected = currentSpaceName();
+    if (!typed || typed !== expected){
+      showToast('הקלידו בדיוק "' + expected + '" כדי לאשר');
+      return;
+    }
+    if (!db){ showToast("מחיקה דורשת חיבור לסנכרון"); return; }
+    els.spaceDeleteForm.hidden = true;
+    deleteSpaceEverywhere().then(function(){
+      try{
+        var list = loadRecentSpaces().filter(function(s){ return s.id !== spaceId; });
+        localStorage.setItem(RECENT_SPACES_KEY, JSON.stringify(list));
+      } catch(e){}
+      goToSpace("");
+    }).catch(function(){ showToast("המחיקה נכשלה"); });
   });
   els.spaceLeaveBtn.addEventListener("click", function(){
     goToSpace("");
